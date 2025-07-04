@@ -17,3 +17,6 @@ See it on action here:
 https://github.com/user-attachments/assets/6ca41bbb-35af-4b9d-847e-73384a086c5d
 
 The code is published under the MIT License.
+
+## Support
+This free-to-use noise generator is developed and maintened by [Bubblebird Studio](https://bubblebirdstudio.com/). You can support the development by buying our games!
