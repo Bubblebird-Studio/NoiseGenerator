@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="description" content="Free online 2D-3D Noise Generator">
+  <meta name="keywords" content="Noise Generator, Perlin Noise, Voronoi Noise, Blue Noise, Free, Game Development, CGi, Computer Graphics, Unity, Unreal Engine, Godot">
+  <link rel="author" href="https://bubblebirdstudio.com/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A simple online 2D-3D Noise Generator - Bubblebird Studio</title>
+  <link rel="icon" type="image/x-icon" href="favicon.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+  <style>
+    .hidden {
+      display: none !important;
+    }
+    .viewer {
+      position: relative;
+      background-color: #2b3035;
+      width: 530px;
+      height: 530px;
+      display: flex;
+      justify-content: center;
+      justify-items: center;
+    }
+    #generatingPlanel {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: #0000004c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body data-bs-theme="dark">
+  <div class="container text-center" style="max-width: 1000px;">
+    <div class="row m-5">
+      <h1 class="display-3">Noise Generator</h1>
+      <p><small>A simple random noise generator by Bubblebird Studio. <a href="https://bubblebirdstudio.com/" target="_blank">Buy our games</a> to support this tool!</small></p>
+    </div>
+
+    <div class="row">
+      <div class="col-md-auto">
+        <div class="viewer overflow-auto">
+          <div id="generatingPlanel" class="hidden">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Generating...</span>
+            </div>
+          </div>
+          <canvas id="noiseCanvas" width="256" height="256"></canvas>
+        </div>
+
+        <p class="text-info" id="imageInfos">64x64 pixels</p>
+        
+        <div class="input-group mb-3">
+          <label class="input-group-text">Channels</label>
+          <div class="input-group-text">
+            <label for="displayChannelR">R&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelR">
+          </div>
+          <div class="input-group-text">
+            <label for="displayChannelG">G&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelG">
+          </div>
+          <div class="input-group-text">
+            <label for="displayChannelB">B&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelB">
+          </div>
+          <div class="input-group-text">
+            <label for="displayChannelA">A&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelA">
+          </div>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose which channels to display and include in the file.">
+            <i class="bi bi-question"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="resSlider">Resolution</label>
+          <div class="input-group-text">
+            <input type="range" class="form-range" min="3" max="10" value="8" id="resSlider">
+          </div>
+          <label class="input-group-text" for="resSlider" id="resLabel">256</label>
+        </div>
+
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="noiseType">Type</label>
+          <select class="form-select" id="noiseType">
+            <option value="random">Random</option>
+            <option value="perlin">Perlin</option>
+            <option value="voronoi">Voronoi</option>
+            <!--<option value="blueNoise">Blue Noise [EXPERIMENTAL - SLOW]</option>-->
+            <!-- <option value="gradientCube">Gradient cube</option> -->
+          </select>
+        </div>
+
+        <div class="settings m-3" id="perlinSettings">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="perlinScaleSlider">Scale</label>
+            <div class="input-group-text">
+              <input type="range" class="form-range" min="0.01" max="0.2" step="0.01" value="0.1" id="perlinScaleSlider">
+            </div>
+            <label class="input-group-text" for="perlinScaleSlider" id="perlinScaleLabel">0.1</label>
+          </div>
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="perlinFractalsSlider">Fractals</label>
+            <div class="input-group-text">
+              <input type="range" class="form-range" min="1" max="10" step="1" value="1" id="perlinFractalsSlider">
+            </div>
+            <label class="input-group-text" for="perlinFractalsSlider" id="perlinFractalsLabel">1</label>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sets the number of noise layers (octaves) combined to create fractal detail.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="perlinLacunaritySlider">Lacunarity</label>
+            <div class="input-group-text">
+              <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" value="2.0" id="perlinLacunaritySlider">
+            </div>
+            <label class="input-group-text" for="perlinLacunaritySlider" id="perlinLacunarityLabel">2.0</label>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+        </div>
+
+        <div class="settings m-3" id="voronoiSettings">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="voronoiCellSizeSlider">Cell size</label>
+            <div class="input-group-text">
+              <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" value="0.1" id="voronoiCellSizeSlider">
+            </div>
+            <label class="input-group-text" for="voronoiCellSizeSlider" id="voronoiCellSizeLabel">0.1</label>
+          </div>
+        </div>
+
+        <div class="settings m-3" id="blueNoiseSettings">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="blueNoiseRadiusSlider">Radius</label>
+            <div class="input-group-text">
+              <input type="range" class="form-range" min="0.01" max="2" step="0.01" value="1.5" id="blueNoiseRadiusSlider">
+            </div>
+            <label class="input-group-text" for="voronoiCellsSlider" id="blueNoiseRadiusLabel">1.5</label>
+          </div>
+        </div>
+
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="seamlessCheckbox">Seamless</label>
+          <div class="input-group-text">
+            <input class="form-check-input mt-0" type="checkbox" checked id="seamlessCheckbox">
+          </div>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Makes the image tileable.">
+            <i class="bi bi-question"></i>
+          </span>
+        </div>
+
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="dimension">Dimension</label>
+          <select class="form-select" id="dimension">
+            <option value="2d">2D</option>
+            <option value="3d">3D</option>
+          </select>
+          <span class="input-group-text hidden" id="dimensionWarning" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Resolution is too high for 3d. Generating an image will fall back to 2d.">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </span>
+        </div>
+
+        <div class="input-group mb-3" id="tilesLayoutGroup">
+          <label class="input-group-text" for="tilesLayout">3D tiles layout</label>
+          <select class="form-select" id="tilesLayout">
+            <option value="auto">Auto</option>
+            <option value="square">Square</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+        </div>
+
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="seedInput">Seed</label>
+          <input type="number" class="form-control" id="seedInput">
+          <button class="btn btn-outline-secondary" type="button" id="button-addon2"onclick="ShuffleSeed()"><i class="bi bi-arrow-clockwise"></i></button>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Defines the starting point for random number generation, producing different noise patterns.">
+            <i class="bi bi-question"></i>
+          </span>
+        </div>
+
+        <div class="btn-group mt-3" role="group">
+          <button type="button" class="btn btn-primary" onclick="generateNoise()"><i class="bi bi-lightning-charge-fill"></i> Generate</button>
+          <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="visually-hidden">Choose specific target channels</span>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" role="button" onclick="generateNoise(true, false, false, false)">Generate on channel R</a></li>
+            <li><a class="dropdown-item" role="button" onclick="generateNoise(false, true, false, false)">Generate on channel G</a></li>
+            <li><a class="dropdown-item" role="button" onclick="generateNoise(false, false, true, false)">Generate on channel B</a></li>
+            <li><a class="dropdown-item" role="button" onclick="generateNoise(false, false, false, true)">Generate on channel A</a></li>
+          </ul>
+        </div>
+        <button class="btn btn-outline-primary mt-3" type="button" onclick="saveImage()"><i class="bi bi-download"></i> Save PNG</button>
+        <button class="btn btn-outline-secondary mt-3" type="button" onclick="copyImageToClipboard()"><i class="bi bi-copy"></i> Copy</button>
+      </div>
+      <div class="row m-5">
+        <p class="text-secondary"><a href="mailto:contact@bubblebirdstudio.com">Contact us</a> for feature request or bug report</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" crossorigin="anonymous">
+  <script src="noiseGenerator.js"></script>
+  <script>
+    ShowSettings("random")
+    ShuffleSeed();
+    ResizeCanvas();
+    generateNoise();
+  </script>
+</body>
+</html>
