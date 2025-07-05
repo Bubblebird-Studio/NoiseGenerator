@@ -17,8 +17,8 @@
     .viewer {
       position: relative;
       background-color: #2b3035;
-      width: 530px;
-      height: 530px;
+      width: 512px;
+      height: 512px;
       display: flex;
       justify-content: center;
       justify-items: center;
@@ -31,46 +31,52 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      user-select: none;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.2s;
     }
   </style>
 </head>
 <body data-bs-theme="dark">
   <div class="container text-center" style="max-width: 1000px;">
     <div class="row m-5">
-      <h1 class="display-3">Noise Generator</h1>
+      <div class="position-relative">
+        <h1 class="display-3">Noise Generator</h1><span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">New version</span>
+      </div>
       <p><small>A simple random noise generator by Bubblebird Studio. <a href="https://bubblebirdstudio.com/" target="_blank">Buy our games</a> to support this tool!</small></p>
     </div>
 
     <div class="row">
       <div class="col-md-auto">
         <div class="viewer overflow-auto">
-          <div id="generatingPlanel" class="hidden">
+          <div id="generatingPlanel">
             <div class="spinner-border" role="status">
               <span class="visually-hidden">Generating...</span>
             </div>
           </div>
-          <canvas id="noiseCanvas" width="256" height="256"></canvas>
+          <canvas id="noiseCanvas"></canvas>
         </div>
 
-        <p class="text-info" id="imageInfos">64x64 pixels</p>
+        <p class="text-info" id="imageInfos"></p>
         
         <div class="input-group mb-3">
-          <label class="input-group-text">Channels</label>
+          <label class="input-group-text">Output channels</label>
           <div class="input-group-text">
             <label for="displayChannelR">R&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelR">
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelR" oninput="drawCanvas()">
           </div>
           <div class="input-group-text">
             <label for="displayChannelG">G&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelG">
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelG" oninput="drawCanvas()">
           </div>
           <div class="input-group-text">
             <label for="displayChannelB">B&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelB">
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelB" oninput="drawCanvas()">
           </div>
           <div class="input-group-text">
             <label for="displayChannelA">A&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelA">
+            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelA" oninput="drawCanvas()">
           </div>
           <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose which channels to display and include in the file.">
             <i class="bi bi-question"></i>
@@ -80,131 +86,194 @@
 
       <div class="col">
         <div class="input-group mb-3">
-          <label class="input-group-text" for="resSlider">Resolution</label>
-          <div class="input-group-text">
-            <input type="range" class="form-range" min="3" max="10" value="8" id="resSlider">
-          </div>
-          <label class="input-group-text" for="resSlider" id="resLabel">256</label>
+          <h3 id="settingsName"></h3>
         </div>
 
         <div class="input-group mb-3">
-          <label class="input-group-text" for="noiseType">Type</label>
-          <select class="form-select" id="noiseType">
-            <option value="random">Random</option>
-            <option value="perlin">Perlin</option>
-            <option value="voronoi">Voronoi</option>
-            <!--<option value="blueNoise">Blue Noise [EXPERIMENTAL - SLOW]</option>-->
-            <!-- <option value="gradientCube">Gradient cube</option> -->
-          </select>
-        </div>
-
-        <div class="settings m-3" id="perlinSettings">
-          <div class="input-group mb-3">
-            <label class="input-group-text" for="perlinScaleSlider">Scale</label>
-            <div class="input-group-text">
-              <input type="range" class="form-range" min="0.01" max="0.4" step="0.01" value="0.1" id="perlinScaleSlider">
-            </div>
-            <label class="input-group-text" for="perlinScaleSlider" id="perlinScaleLabel">0.1</label>
-          </div>
-          <div class="input-group mb-3">
-            <label class="input-group-text" for="perlinFractalsSlider">Octaves</label>
-            <div class="input-group-text">
-              <input type="range" class="form-range" min="1" max="10" step="1" value="1" id="perlinFractalsSlider">
-            </div>
-            <label class="input-group-text" for="perlinFractalsSlider" id="perlinFractalsLabel">1</label>
-            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sets the number of noise layers combined to create fractal detail.">
-              <i class="bi bi-question"></i>
-            </span>
-          </div>
-          <div class="input-group mb-3">
-            <label class="input-group-text" for="perlinLacunaritySlider">Lacunarity</label>
-            <div class="input-group-text">
-              <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" value="2.0" id="perlinLacunaritySlider">
-            </div>
-            <label class="input-group-text" for="perlinLacunaritySlider" id="perlinLacunarityLabel">2.0</label>
-            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
-              <i class="bi bi-question"></i>
-            </span>
-          </div>
-        </div>
-
-        <div class="settings m-3" id="voronoiSettings">
-          <div class="input-group mb-3">
-            <label class="input-group-text" for="voronoiCellSizeSlider">Cell size</label>
-            <div class="input-group-text">
-              <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" value="0.1" id="voronoiCellSizeSlider">
-            </div>
-            <label class="input-group-text" for="voronoiCellSizeSlider" id="voronoiCellSizeLabel">0.1</label>
-          </div>
-        </div>
-
-        <div class="settings m-3" id="blueNoiseSettings">
-          <div class="input-group mb-3">
-            <label class="input-group-text" for="blueNoiseRadiusSlider">Radius</label>
-            <div class="input-group-text">
-              <input type="range" class="form-range" min="0.01" max="2" step="0.01" value="1.5" id="blueNoiseRadiusSlider">
-            </div>
-            <label class="input-group-text" for="voronoiCellsSlider" id="blueNoiseRadiusLabel">1.5</label>
-          </div>
-        </div>
-
-        <div class="input-group mb-3">
-          <label class="input-group-text" for="seamlessCheckbox">Seamless</label>
+          <label class="input-group-text" for="resolution">Resolution</label>
           <div class="input-group-text">
-            <input class="form-check-input mt-0" type="checkbox" checked id="seamlessCheckbox">
+            <input type="range" class="form-range" min="3" max="10" id="resolution" oninput="update(true)">
           </div>
-          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Makes the image tileable.">
-            <i class="bi bi-question"></i>
-          </span>
+          <label class="input-group-text" for="resolution" id="resolutionLabel"></label>
         </div>
 
         <div class="input-group mb-3">
           <label class="input-group-text" for="dimension">Dimension</label>
-          <select class="form-select" id="dimension">
+          <select class="form-select" id="dimension" oninput="update(true)">
             <option value="2d">2D</option>
             <option value="3d">3D</option>
           </select>
-          <span class="input-group-text hidden" id="dimensionWarning" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Resolution is too high for 3d. Generating an image will fall back to 2d.">
+          <span class="input-group-text hidden text-danger" id="dimensionWarning" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Resolution is too high for 3d. Generating an image will fall back to 2d.">
             <i class="bi bi-exclamation-triangle-fill"></i>
           </span>
         </div>
 
-        <div class="input-group mb-3" id="tilesLayoutGroup">
-          <label class="input-group-text" for="tilesLayout">3D tiles layout</label>
-          <select class="form-select" id="tilesLayout">
+        <div class="input-group mb-3" id="layoutGroup">
+          <label class="input-group-text" for="layout">3D tiles layout</label>
+          <select class="form-select" id="layout" oninput="update(true)">
             <option value="auto">Auto</option>
             <option value="square">Square</option>
             <option value="horizontal">Horizontal</option>
             <option value="vertical">Vertical</option>
           </select>
-        </div>
-
-        <div class="input-group mb-3">
-          <label class="input-group-text" for="seedInput">Seed</label>
-          <input type="number" class="form-control" id="seedInput">
-          <button class="btn btn-outline-secondary" type="button" id="button-addon2"onclick="ShuffleSeed()"><i class="bi bi-arrow-clockwise"></i></button>
-          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Defines the starting point for random number generation, producing different noise patterns.">
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lets you choose how to arrange the tiles (the slices of your volume texture) in 2D.">
             <i class="bi bi-question"></i>
           </span>
         </div>
 
-        <div class="btn-group mt-3" role="group">
-          <button type="button" class="btn btn-primary" onclick="generateNoise()"><i class="bi bi-lightning-charge-fill"></i> Generate</button>
-          <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="visually-hidden">Choose specific target channels</span>
-          </button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" role="button" onclick="generateNoise(true, false, false, false)">Generate on channel R</a></li>
-            <li><a class="dropdown-item" role="button" onclick="generateNoise(false, true, false, false)">Generate on channel G</a></li>
-            <li><a class="dropdown-item" role="button" onclick="generateNoise(false, false, true, false)">Generate on channel B</a></li>
-            <li><a class="dropdown-item" role="button" onclick="generateNoise(false, false, false, true)">Generate on channel A</a></li>
-          </ul>
+        <ul class="nav nav-tabs">
+          <li class="nav-item">
+            <a class="nav-link disabled" aria-disabled="true">Image channels</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" role="button" data-channel=0 onclick="switchChannel(0)">R</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" role="button" data-channel=1 onclick="switchChannel(1)">G</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" role="button" data-channel=2 onclick="switchChannel(2)">B</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" role="button" data-channel=3 onclick="switchChannel(3)">A</a>
+          </li>
+        </ul>
+
+        <div class="col border-start border-end border-bottom p-3">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="type">Type</label>
+            <select class="form-select" id="type" oninput="update()">
+              <option value="random">Random</option>
+              <option value="perlin">Perlin</option>
+              <option value="voronoi">Voronoi</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+
+          <div class="settings m-3" id="perlinSettings">
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="perlinSize">Scale</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="0.4" step="0.01" id="perlinSize" oninput="update()">
+              </div>
+              <label class="input-group-text" for="perlinSize" id="perlinSizeLabel"></label>
+            </div>
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="perlinOctaves">Octaves</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="1" max="10" step="1" id="perlinOctaves" oninput="update()">
+              </div>
+              <label class="input-group-text" for="perlinOctaves" id="perlinOctavesLabel"></label>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sets the number of noise layers combined to create fractal detail.">
+                <i class="bi bi-question"></i>
+              </span>
+            </div>
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" oninput="update()">
+              </div>
+              <label class="input-group-text" for="perlinLacunarity" id="perlinLacunarityLabel"></label>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
+                <i class="bi bi-question"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="settings m-3" id="voronoiSettings">
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="voronoiCellSize">Cell size</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" id="voronoiCellSize" oninput="update()">
+              </div>
+              <label class="input-group-text" for="voronoiCellSize" id="voronoiCellSizeLabel"></label>
+            </div>
+          </div>
+
+          <div class="settings m-3" id="blueNoiseSettings">
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="blueNoiseRadius">Radius</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="2" step="0.01" id="blueNoiseRadius" oninput="update()">
+              </div>
+              <label class="input-group-text" for="blueNoiseRadius" id="blueNoiseRadiusLabel"></label>
+            </div>
+          </div>
+
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="seamless">Seamless</label>
+            <div class="input-group-text">
+              <input class="form-check-input mt-0" type="checkbox" id="seamless" oninput="update()">
+            </div>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Makes the image tileable.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group-text" for="seed">Seed</label>
+            <input type="number" class="form-control" id="seed" oninput="update()">
+            <button class="btn btn-outline-secondary" type="button" id="button-addon2" onclick="shuffleSeed()"><i class="bi bi-arrow-clockwise"></i></button>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Defines the starting point for random number generation, producing different noise patterns.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
         </div>
-        <button class="btn btn-outline-primary mt-3" type="button" onclick="saveImage()"><i class="bi bi-download"></i> Save PNG</button>
-        <button class="btn btn-outline-secondary mt-3" type="button" onclick="copyImageToClipboard()"><i class="bi bi-copy"></i> Copy</button>
+        
+        <button class="btn btn-primary mt-3" type="button" onclick="exportImage()"><i class="bi bi-download"></i> Export PNG</button>
+        <button class="btn btn-secondary mt-3" type="button" onclick="copyImageToClipboard()"><i class="bi bi-copy"></i> Copy</button>
+        <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="modal" data-bs-target="#loadBackdrop"><i class="bi bi-floppy"></i> Load...</button>
+        <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="modal" data-bs-target="#saveBackdrop"><i class="bi bi-floppy"></i> Save...</button>
       </div>
       <div class="row m-5">
         <p class="text-secondary"><a href="mailto:contact@bubblebirdstudio.com">Contact us</a> for feature request or bug report. Visit the <a href="https://github.com/Bubblebird-Studio/NoiseGenerator">Github project page</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- save as modal -->
+  <div class="modal fade" id="saveBackdrop" data-bs-keyboard="false" tabindex="-1" aria-labelledby="saveBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="saveBackdropLabel"><i class="bi bi-floppy"></i> Save your settings</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="recipient-name" class="col-form-label">Choose a name for these settings:</label>
+            <input type="text" class="form-control mb-2" id="saveName">
+            <p class="text-warning">
+              <i class="bi bi-info-circle"></i> Settings are saved in your browser only (localStorage). 
+              If you clear the cache or data for this domain, you will lose them.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- load modal -->
+  <div class="modal fade" id="loadBackdrop" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loadBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="loadBackdropLabel"><i class="bi bi-floppy"></i> Load settings</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="recipient-name" class="col-form-label">Choose a setting to load:</label>
+            <div class="list-group" id="savedSettingsList"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -213,10 +282,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" crossorigin="anonymous">
   <script src="noiseGenerator.js"></script>
   <script>
-    ShowSettings("random")
-    ShuffleSeed();
-    ResizeCanvas();
-    generateNoise();
+    init();
   </script>
 </body>
 </html>

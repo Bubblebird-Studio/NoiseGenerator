@@ -25,77 +25,126 @@
  */
 
 const canvas = document.getElementById("noiseCanvas");
-const resSlider = document.getElementById("resSlider");
-const seedInput = document.getElementById("seedInput");
-const resLabel = document.getElementById("resLabel");
-const noiseType = document.getElementById("noiseType");
-const perlinScaleSlider = document.getElementById("perlinScaleSlider");
-const perlinScaleLabel = document.getElementById("perlinScaleLabel");
-const perlinFractalsSlider = document.getElementById("perlinFractalsSlider");
-const perlinFractalsLabel = document.getElementById("perlinFractalsLabel");
-const perlinLacunaritySlider = document.getElementById("perlinLacunaritySlider");
-const perlinLacunarityLabel = document.getElementById("perlinLacunarityLabel");
-const voronoiCellSizeSlider = document.getElementById("voronoiCellSizeSlider");
-const voronoiCellSizeLabel = document.getElementById("voronoiCellSizeLabel");
-const blueNoiseRadiusSlider = document.getElementById("blueNoiseRadiusSlider");
-const blueNoiseRadiusLabel = document.getElementById("blueNoiseRadiusLabel");
-const seamlessCheckbox = document.getElementById("seamlessCheckbox");
-const dimension = document.getElementById("dimension");
-const channelSelector = document.getElementById("channelSelector");
-const imageInfos = document.getElementById("imageInfos");
-const displayChannelR = document.getElementById("displayChannelR");
-const displayChannelG = document.getElementById("displayChannelG");
-const displayChannelB = document.getElementById("displayChannelB");
-const displayChannelA = document.getElementById("displayChannelA");
+const ctx = canvas.getContext("2d");
 const generatingPlanel = document.getElementById("generatingPlanel");
-const dimensionWarning = document.getElementById("dimensionWarning");
-const tilesLayoutGroup = document.getElementById("tilesLayoutGroup");
-const tilesLayout = document.getElementById("tilesLayout");
+const tooltipList = [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+const loadModal = new bootstrap.Modal('#loadBackdrop');
+const initialSeed = GetRandomSeed();
+const channelsData = [];
 
-noiseType.addEventListener("input", () => ShowSettings(noiseType.value));
-resSlider.addEventListener("input", () => ResizeCanvas());
-dimension.addEventListener("input", () => ResizeCanvas());
-tilesLayout.addEventListener("input", () => ResizeCanvas());
-perlinScaleSlider.addEventListener("input", () => perlinScaleLabel.textContent = perlinScaleSlider.value);
-perlinFractalsSlider.addEventListener("input", () => perlinFractalsLabel.textContent = perlinFractalsSlider.value);
-perlinLacunaritySlider.addEventListener("input", () => perlinLacunarityLabel.textContent = perlinLacunaritySlider.value);
-voronoiCellSizeSlider.addEventListener("input", () => voronoiCellSizeLabel.textContent = voronoiCellSizeSlider.value);
-blueNoiseRadiusSlider.addEventListener("input", () => blueNoiseRadiusLabel.textContent = blueNoiseRadiusSlider.value);
-displayChannelR.addEventListener("input", Draw);
-displayChannelG.addEventListener("input", Draw);
-displayChannelB.addEventListener("input", Draw);
-displayChannelA.addEventListener("input", Draw);
+let settings = {
+  name: "Noise",
+  resolution: 256,
+  dimension: "2d",
+  layout: "auto",
+  channels: [
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
+  ],
+}
+let activeChannel = 0;
 
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+document.getElementById("loadBackdrop").addEventListener('shown.bs.modal', onLoadModalShown);
+document.getElementById("saveBackdrop").addEventListener('shown.bs.modal', onSaveModalShown);
 
-let channelR = [];
-let channelG = [];
-let channelB = [];
-let channelA = [];
+function init() {
+  resizeCanvas();
+  refreshUi();
+  generateNoise(true);
+}
+
+function update(clear = false) {
+  const channelSettings = settings.channels[activeChannel];
+
+  settings.resolution = 1 << document.getElementById("resolution").value;
+  settings.dimension = document.getElementById("dimension").value;
+  settings.layout = document.getElementById("layout").value;
+
+  channelSettings.type = document.getElementById("type").value;
+  channelSettings.seamless = document.getElementById("seamless").checked;
+  channelSettings.seed = document.getElementById("seed").value;
+  channelSettings.perlinSize = document.getElementById("perlinSize").value;
+  channelSettings.perlinOctaves = document.getElementById("perlinOctaves").value;
+  channelSettings.perlinLacunarity = document.getElementById("perlinLacunarity").value;
+  channelSettings.voronoiCellSize = document.getElementById("voronoiCellSize").value;
+  channelSettings.blueNoiseRadius = document.getElementById("blueNoiseRadius").value;
+
+  if (clear) resizeCanvas();
+  generateNoise(clear);
+  refreshUi();
+}
+
+function refreshUi() {
+  const channelSettings = settings.channels[activeChannel];
+  const canvasWidth = settings.resolution * xTiles();
+  const canvasHeight = settings.resolution * yTiles();
+
+  for(let elm of document.getElementsByClassName("channel-nav")) elm.getAttribute("data-channel") == activeChannel ? elm.classList.add("active") : elm.classList.remove("active");
+  for(let elm of document.getElementsByClassName("settings")) elm.classList.add("hidden");
+  document.getElementById(channelSettings.type + "Settings")?.classList.remove("hidden");
+
+  document.getElementById("settingsName").innerHTML = settings.name;
+  document.getElementById("resolution").value = Math.log2(settings.resolution);
+  document.getElementById("resolutionLabel").textContent = settings.resolution;
+  document.getElementById("dimension").value = settings.dimension;
+  document.getElementById("layout").value = settings.layout;
+  document.getElementById("type").value = channelSettings.type;
+  document.getElementById("perlinSize").value = document.getElementById("perlinSizeLabel").textContent = channelSettings.perlinSize;
+  document.getElementById("perlinOctaves").value = document.getElementById("perlinOctavesLabel").textContent = channelSettings.perlinOctaves;
+  document.getElementById("perlinLacunarity").value = document.getElementById("perlinLacunarityLabel").textContent = channelSettings.perlinLacunarity;
+  document.getElementById("voronoiCellSize").value = document.getElementById("voronoiCellSizeLabel").textContent = channelSettings.voronoiCellSize;
+  document.getElementById("blueNoiseRadius").value = document.getElementById("blueNoiseRadiusLabel").textContent = channelSettings.blueNoiseRadius;
+  document.getElementById("seamless").checked = channelSettings.seamless;
+  document.getElementById("seed").value = channelSettings.seed;
+  document.getElementById("imageInfos").innerHTML = `${canvasWidth}x${canvasHeight} pixels`;
+  document.getElementById("dimensionWarning").classList.add("hidden");
+  document.getElementById("layoutGroup").classList.add("hidden");
+  if (settings.resolution > 256 && settings.dimension === "3d") document.getElementById("dimensionWarning").classList.remove("hidden")
+
+  if (is3d()) {
+    document.getElementById("layoutGroup").classList.remove("hidden");
+    document.getElementById("imageInfos").innerHTML += ` - ${xTiles()} columns, ${yTiles()} rows (${xTiles() * yTiles()} tiles)`
+  }
+}
+
+function switchChannel(channel) {
+  activeChannel = channel;
+  refreshUi();
+}
+
+function shuffleSeed() {
+  const channelSettings = settings.channels[activeChannel];
+  channelSettings.seed = GetRandomSeed();
+  refreshUi();
+  generateNoise();
+}
+
+function GetRandomSeed() {
+  return Math.floor(Math.random() * 100000);
+}
 
 function is3d() {
-  return dimension.value === "3d" && resSlider.value < 9;
+  return settings.dimension === "3d" && settings.resolution < 512;
 }
 
 function xTiles() {
-  const resolution = 1 << resSlider.value;
-  const sqr = Math.sqrt(resolution);
+  const sqr = Math.sqrt(settings.resolution);
   if (!is3d()) return 1;
-  if (tilesLayout.value === "auto") return Number.isInteger(sqr) ? Math.ceil(sqr) : 1;
-  if (tilesLayout.value === "square") return Math.ceil(sqr);
-  if (tilesLayout.value === "horizontal") return resolution;
-  if (tilesLayout.value === "vertical") return 1;
+  if (settings.layout === "auto") return Number.isInteger(sqr) ? Math.ceil(sqr) : 1;
+  if (settings.layout === "square") return Math.ceil(sqr);
+  if (settings.layout === "horizontal") return settings.resolution;
+  if (settings.layout === "vertical") return 1;
 }
 
 function yTiles() {
-  const resolution = 1 << resSlider.value;
-  const sqr = Math.sqrt(resolution);
+  const sqr = Math.sqrt(settings.resolution);
   if (!is3d()) return 1;
-  if (tilesLayout.value === "auto") return Number.isInteger(sqr) ? Math.ceil(sqr) : resolution;
-  if (tilesLayout.value === "square") return Math.ceil(sqr);
-  if (tilesLayout.value === "horizontal") return 1;
-  if (tilesLayout.value === "vertical") return resolution;
+  if (settings.layout === "auto") return Number.isInteger(sqr) ? Math.ceil(sqr) : settings.resolution;
+  if (settings.layout === "square") return Math.ceil(sqr);
+  if (settings.layout === "horizontal") return 1;
+  if (settings.layout === "vertical") return settings.resolution;
 }
 
 function fade(t) {
@@ -125,26 +174,13 @@ function splitmix32(a) {
   }
 }
 
-function generateBlack(seed, width, height, depth, seamless) {
+function generateNone(seed, width, height, depth, seamless) {
   const imgData = []
   for (let z = 0; z < depth; z++) {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const index = x + width * y + width * height * z;
-        imgData[index] = 0;
-      }
-    }
-  }
-  return imgData;
-}
-
-function generateGradientCube(seed, width, height, depth, seamless) {
-  const imgData = []
-  for (let z = 0; z < depth; z++) {
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const index = x + width * y + width * height * z;
-        imgData[index] = x / width;
+        imgData[index] = 1;
       }
     }
   }
@@ -331,83 +367,55 @@ function generateBlueNoise(seed, width, height, depth, seamless, radius) {
   return imgData;
 }
 
-function ResizeCanvas() {
-  const resolution = 1 << resSlider.value;
-  const tileResolutionX = resolution;
-  const tileResolutionY = resolution;
-  const canvasWidth = tileResolutionX * xTiles();
-  const canvasHeight = tileResolutionY * yTiles();
+function resizeCanvas() {
+  const canvasWidth = settings.resolution * xTiles();
+  const canvasHeight = settings.resolution * yTiles();
 
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
-  channelR = [];
-  channelG = [];
-  channelB = [];
-  channelA = [];
-  resLabel.textContent = 1 << resSlider.value;
-  imageInfos.innerHTML = `${canvasWidth}x${canvasHeight} pixels`;
-  dimensionWarning.classList.add("hidden");
-  tilesLayoutGroup.classList.add("hidden");
-  if (resSlider.value > 8 && dimension.value === "3d") dimensionWarning.classList.remove("hidden")
-  if (is3d()) {
-    tilesLayoutGroup.classList.remove("hidden");
-    imageInfos.innerHTML += ` - ${xTiles()} columns, ${yTiles()} rows (${xTiles() * yTiles()} tiles)`
-  }
+  channelsData[0] = [];
+  channelsData[1] = [];
+  channelsData[2] = [];
+  channelsData[3] = [];
 }
 
-async function generateNoise(R = true, G = true, B = true, A = true) {
-  const resolution = 1 << resSlider.value;
-  const type = noiseType.value;
-  const perlinScale = perlinScaleSlider.value * resolution;
-  const perlinFractals = perlinFractalsSlider.value;
-  const perlinLacunarity = perlinLacunaritySlider.value;
-  const voronoiCellSize = voronoiCellSizeSlider.value * resolution;
-  const blueNoiseRadius = blueNoiseRadiusSlider.value;
-  const seamless = seamlessCheckbox.checked;
-  const tileResolutionX = resolution;
-  const tileResolutionY = resolution;
-  const depthResolution = is3d() ? resolution : 1;
-  const seed = seedInput.value;
+async function generateNoise(allChannels = false) {
+  const width = settings.resolution;
+  const height = settings.resolution;
+  const depth = is3d() ? settings.resolution : 1;
 
-  generatingPlanel.classList.remove("hidden");
+  generatingPlanel.style.opacity = 1;
+  await delay(10);
 
-  await delay(1);
+  for (let c = 0; c < 4; c++) {
+    if (c != activeChannel && allChannels == false) continue;
+    const channelSettings = settings.channels[c];
+    const seed = channelSettings.seed;
+    const seamless = channelSettings.seamless;
 
-  let noise;
-  if (type === "black") noise = generateBlack(seed, tileResolutionX, tileResolutionY, depthResolution, seamless);
-  if (type === "gradientCube") noise = generateGradientCube(seed, tileResolutionX, tileResolutionY, depthResolution, seamless);
-  if (type === "random") noise = generateRandomNoise(seed, tileResolutionX, tileResolutionY, depthResolution, seamless);
-  if (type === "perlin") noise = generateSimplexNoise(seed, tileResolutionX, tileResolutionY, depthResolution, seamless, perlinScale, perlinFractals, perlinLacunarity);
-  if (type === "voronoi") noise = generateVoronoiNoise(seed, tileResolutionX, tileResolutionY, depthResolution, seamless, voronoiCellSize);
-  if (type === "blueNoise") noise = generateBlueNoise(seed, tileResolutionX, tileResolutionY, depthResolution, seamless, blueNoiseRadius);
-
-  for (let z = 0; z < depthResolution; z++) {
-    for (let y = 0; y < tileResolutionY; y++) {
-      for (let x = 0; x < tileResolutionX; x++) {
-        const noiseIndex = x + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
-        const noiseVal =  noise[noiseIndex];
-        if (R) channelR[noiseIndex] = noiseVal;
-        if (G) channelG[noiseIndex] = noiseVal;
-        if (B) channelB[noiseIndex] = noiseVal;
-        if (A) channelA[noiseIndex] = noiseVal;
-      }
-    }
+    if (channelSettings.type === "none")
+        channelsData[c] = generateNone(seed, width, height, depth, seamless);
+    if (channelSettings.type === "random")
+      channelsData[c] = generateRandomNoise(seed, width, height, depth, seamless);
+    if (channelSettings.type === "perlin")
+      channelsData[c] = generateSimplexNoise(seed, width, height, depth, seamless, channelSettings.perlinSize * settings.resolution, channelSettings.perlinOctaves, channelSettings.perlinLacunarity);
+    if (channelSettings.type === "voronoi")
+      channelsData[c] = generateVoronoiNoise(seed, width, height, depth, seamless, channelSettings.voronoiCellSize * settings.resolution);
+    if (channelSettings.type === "blueNoise")
+      channelsData[c] = generateBlueNoise(seed, width, height, depth, seamless, channelSettings.blueNoiseRadius);
   }
 
-  Draw();
+  drawCanvas();
 
-  await delay(1);
-  generatingPlanel.classList.add("hidden");
+  await delay(10);
+  generatingPlanel.style.opacity = 0;
 }
 
-function Draw() {
-  const ctx = canvas.getContext("2d");
-  const resolution = 1 << resSlider.value;
-  const tileResolutionX = resolution;
-  const tileResolutionY = resolution;
-  const depthResolution = is3d() ? resolution : 1;
+function drawCanvas() {
+  const tileResolutionX = settings.resolution;
+  const tileResolutionY = settings.resolution;
+  const depthResolution = is3d() ? settings.resolution : 1;
   const imgData = ctx.createImageData(tileResolutionX, tileResolutionY);
-  console.log(imgData.pixelFormat)
 
   for (let z = 0; z < depthResolution; z++) {
     const posX = (z % xTiles()) * tileResolutionX;
@@ -416,10 +424,10 @@ function Draw() {
       for (let x = 0; x < tileResolutionX; x++) {
         const dataIndex = x + tileResolutionX * y;
         const noiseIndex = x + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
-        if (displayChannelR.checked) imgData.data[dataIndex * 4 + 0] = channelR[noiseIndex] * 255;
-        if (displayChannelG.checked) imgData.data[dataIndex * 4 + 1] = channelG[noiseIndex] * 255;
-        if (displayChannelB.checked) imgData.data[dataIndex * 4 + 2] = channelB[noiseIndex] * 255;
-        if (displayChannelA.checked) imgData.data[dataIndex * 4 + 3] = channelA[noiseIndex] * 255;
+        if (displayChannelR.checked) imgData.data[dataIndex * 4 + 0] = channelsData[0][noiseIndex] * 255;
+        if (displayChannelG.checked) imgData.data[dataIndex * 4 + 1] = channelsData[1][noiseIndex] * 255;
+        if (displayChannelB.checked) imgData.data[dataIndex * 4 + 2] = channelsData[2][noiseIndex] * 255;
+        if (displayChannelA.checked) imgData.data[dataIndex * 4 + 3] = channelsData[3][noiseIndex] * 255;
         else imgData.data[dataIndex * 4 + 3] = 255;
       }
     }
@@ -427,27 +435,15 @@ function Draw() {
   }
 }
 
-function ShuffleSeed() {
-  return seedInput.value = Math.floor(Math.random() * 1000000);
-}
-
-function ShowSettings(id)
-{
-  for(let elm of document.getElementsByClassName("settings")) elm.classList.add("hidden");
-  document.getElementById(id + "Settings")?.classList.remove("hidden");
-}
-
-function saveImage() {
+function exportImage() {
   const link = document.createElement("a");
-  link.download = dimension.value === "3d" ? "noise_volume.png" : "noise_map.png";
+  link.download = `${settings.name}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
 
 function delay(time) {
-  return new Promise(res => {
-    setTimeout(res,time)
-  })
+  return new Promise(res => setTimeout(res,time));
 }
 
 async function copyImageToClipboard() {
@@ -459,4 +455,69 @@ async function copyImageToClipboard() {
   } catch (err) {
     alert("Failed to copy: " + err);
   }
+}
+
+function onLoadModalShown() {
+  document.getElementById("savedSettingsList").innerHTML = "";
+  try {
+    const settingsCollection = JSON.parse(localStorage.getItem("settingsCollection") || {});
+
+    if (Object.keys(settingsCollection).length == 0) {
+      document.getElementById("savedSettingsList").innerHTML = '<p class="text-info"><i class="bi bi-info-circle"></i> No settings saved on this browser.</p>';
+    }
+
+    for (const key in settingsCollection) {
+      const listItem = document.createElement("button");
+      listItem.className = "list-group-item list-group-item-action position-relative";
+      listItem.innerHTML = key;
+      listItem.onclick = () => {
+        settings = settingsCollection[key];
+        resizeCanvas();
+        generateNoise(true);
+        refreshUi();
+        loadModal.hide();
+      }
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "btn position-absolute top-50 end-0 translate-middle";
+      deleteButton.innerHTML = '<i class="bi bi-trash3"></i>';
+      deleteButton.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`Really delete setting ${key}`)) {
+          delete settingsCollection[key];
+          localStorage.setItem("settingsCollection", JSON.stringify(settingsCollection));
+          onLoadModalShown();
+        }
+      }
+      listItem.appendChild(deleteButton);
+      document.getElementById("savedSettingsList").appendChild(listItem);
+    }
+  } catch(e) {
+    fixSettingsCollection();
+  }
+}
+
+function onSaveModalShown() {
+  document.getElementById("saveName").value = settings.name;
+  document.getElementById("saveName").focus();
+}
+
+function saveSettings() {
+  const name = document.getElementById("saveName").value || settings.name || "untitled noise settings";
+  settings.name = name;
+
+  try {
+    const settingsCollection = JSON.parse(localStorage.getItem("settingsCollection") || "{}");
+    settingsCollection[name] = settings
+    localStorage.setItem("settingsCollection", JSON.stringify(settingsCollection));
+  } catch(e) {
+    fixSettingsCollection();
+  }
+  
+  refreshUi();
+}
+
+function fixSettingsCollection() {
+  alert("Your settings collection was corrupted. They were cleared to fix the issue.")
+  localStorage.setItem("settingsCollection", "{}");
 }
