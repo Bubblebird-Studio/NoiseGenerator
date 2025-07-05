@@ -460,7 +460,7 @@ async function copyImageToClipboard() {
 function onLoadModalShown() {
   document.getElementById("savedSettingsList").innerHTML = "";
   try {
-    const settingsCollection = JSON.parse(localStorage.getItem("settingsCollection") || {});
+    const settingsCollection = JSON.parse(localStorage.getItem("settingsCollection") || "{}");
 
     if (Object.keys(settingsCollection).length == 0) {
       document.getElementById("savedSettingsList").innerHTML = '<p class="text-info"><i class="bi bi-info-circle"></i> No settings saved on this browser.</p>';
