@@ -32,36 +32,49 @@ const loadModal = new bootstrap.Modal('#loadBackdrop');
 const initialSeed = GetRandomSeed();
 const channelsData = [];
 
-let settings = {
+const defaultSettings = {
   name: "Noise",
   resolution: 256,
   dimension: "2d",
   layout: "auto",
+  activeChannel: 0,
   channels: [
     { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
     { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
     { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
     { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
   ],
+  outputType: "default",
+  outputR: true,
+  outputG: true,
+  outputB: true,
+  outputA: true,
+  normalScale: 1.0,
 }
-let activeChannel = 0;
+let settings = structuredClone(defaultSettings);
 
 document.getElementById("loadBackdrop").addEventListener('shown.bs.modal', onLoadModalShown);
 document.getElementById("saveBackdrop").addEventListener('shown.bs.modal', onSaveModalShown);
 
-function init() {
+async function init() {
   resizeCanvas();
+  await generateNoise(true);
+  await drawCanvas();
   refreshUi();
-  generateNoise(true);
 }
 
-function update(clear = false) {
-  const channelSettings = settings.channels[activeChannel];
-
+async function update(clear = false, redrawOnly = false) {
   settings.resolution = 1 << document.getElementById("resolution").value;
   settings.dimension = document.getElementById("dimension").value;
   settings.layout = document.getElementById("layout").value;
+  settings.outputType = document.getElementById("outputType").value;
+  settings.outputR = document.getElementById("outputR").checked;
+  settings.outputG = document.getElementById("outputG").checked;
+  settings.outputB = document.getElementById("outputB").checked;
+  settings.outputA = document.getElementById("outputA").checked;
+  settings.normalScale = document.getElementById("normalScale").value;
 
+  const channelSettings = getActiveSettingsChannel();
   channelSettings.type = document.getElementById("type").value;
   channelSettings.seamless = document.getElementById("seamless").checked;
   channelSettings.seed = document.getElementById("seed").value;
@@ -72,16 +85,17 @@ function update(clear = false) {
   channelSettings.blueNoiseRadius = document.getElementById("blueNoiseRadius").value;
 
   if (clear) resizeCanvas();
-  generateNoise(clear);
+  if (!redrawOnly) await generateNoise(clear);
+  await drawCanvas();
   refreshUi();
 }
 
 function refreshUi() {
-  const channelSettings = settings.channels[activeChannel];
+  const channelSettings = getActiveSettingsChannel();
   const canvasWidth = settings.resolution * xTiles();
   const canvasHeight = settings.resolution * yTiles();
 
-  for(let elm of document.getElementsByClassName("channel-nav")) elm.getAttribute("data-channel") == activeChannel ? elm.classList.add("active") : elm.classList.remove("active");
+  for(let elm of document.getElementsByClassName("channel-nav")) elm.getAttribute("data-channel") == settings.activeChannel ? elm.classList.add("active") : elm.classList.remove("active");
   for(let elm of document.getElementsByClassName("settings")) elm.classList.add("hidden");
   document.getElementById(channelSettings.type + "Settings")?.classList.remove("hidden");
 
@@ -107,18 +121,37 @@ function refreshUi() {
     document.getElementById("layoutGroup").classList.remove("hidden");
     document.getElementById("imageInfos").innerHTML += ` - ${xTiles()} columns, ${yTiles()} rows (${xTiles() * yTiles()} tiles)`
   }
+
+  document.getElementById("outputType").value = settings.outputType;
+  document.getElementById("outputR").checked = settings.outputR;
+  document.getElementById("outputG").checked = settings.outputG;
+  document.getElementById("outputB").checked = settings.outputB;
+  document.getElementById("outputA").checked = settings.outputA;
+  document.getElementById("normalScale").value = document.getElementById("normalScaleLabel").textContent = settings.normalScale;
+  if (settings.outputType === "default") {
+    document.getElementById("defaultOutputPanel").classList.remove("hidden");
+    document.getElementById("normalOutputPanel").classList.add("hidden");
+  } else {
+    document.getElementById("defaultOutputPanel").classList.add("hidden");
+    document.getElementById("normalOutputPanel").classList.remove("hidden");
+  }
+}
+
+function getActiveSettingsChannel() {
+  return settings.channels[settings.activeChannel || 0];
 }
 
 function switchChannel(channel) {
-  activeChannel = channel;
+  settings.activeChannel = channel;
   refreshUi();
 }
 
-function shuffleSeed() {
-  const channelSettings = settings.channels[activeChannel];
+async function shuffleSeed() {
+  const channelSettings = getActiveSettingsChannel();
   channelSettings.seed = GetRandomSeed();
   refreshUi();
-  generateNoise();
+  await generateNoise();
+  await drawCanvas();
 }
 
 function GetRandomSeed() {
@@ -388,7 +421,7 @@ async function generateNoise(allChannels = false) {
   await delay(10);
 
   for (let c = 0; c < 4; c++) {
-    if (c != activeChannel && allChannels == false) continue;
+    if (c != settings.activeChannel && allChannels == false) continue;
     const channelSettings = settings.channels[c];
     const seed = channelSettings.seed;
     const seamless = channelSettings.seamless;
@@ -405,17 +438,18 @@ async function generateNoise(allChannels = false) {
       channelsData[c] = generateBlueNoise(seed, width, height, depth, seamless, channelSettings.blueNoiseRadius);
   }
 
-  drawCanvas();
-
   await delay(10);
   generatingPlanel.style.opacity = 0;
 }
 
-function drawCanvas() {
+async function drawCanvas() {
   const tileResolutionX = settings.resolution;
   const tileResolutionY = settings.resolution;
   const depthResolution = is3d() ? settings.resolution : 1;
   const imgData = ctx.createImageData(tileResolutionX, tileResolutionY);
+
+  generatingPlanel.style.opacity = 1;
+  await delay(10);
 
   for (let z = 0; z < depthResolution; z++) {
     const posX = (z % xTiles()) * tileResolutionX;
@@ -424,15 +458,38 @@ function drawCanvas() {
       for (let x = 0; x < tileResolutionX; x++) {
         const dataIndex = x + tileResolutionX * y;
         const noiseIndex = x + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
-        if (displayChannelR.checked) imgData.data[dataIndex * 4 + 0] = channelsData[0][noiseIndex] * 255;
-        if (displayChannelG.checked) imgData.data[dataIndex * 4 + 1] = channelsData[1][noiseIndex] * 255;
-        if (displayChannelB.checked) imgData.data[dataIndex * 4 + 2] = channelsData[2][noiseIndex] * 255;
-        if (displayChannelA.checked) imgData.data[dataIndex * 4 + 3] = channelsData[3][noiseIndex] * 255;
-        else imgData.data[dataIndex * 4 + 3] = 255;
+        const noiseIndexL = ((x + 1) % tileResolutionX) + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
+        const noiseIndexT = x + tileResolutionX * ((y + 1) % tileResolutionY) + tileResolutionX * tileResolutionY * z;
+
+        if (settings.outputType === "default") {
+          if (settings.outputR) imgData.data[dataIndex * 4 + 0] = channelsData[0][noiseIndex] * 255;
+          if (settings.outputG) imgData.data[dataIndex * 4 + 1] = channelsData[1][noiseIndex] * 255;
+          if (settings.outputB) imgData.data[dataIndex * 4 + 2] = channelsData[2][noiseIndex] * 255;
+          if (settings.outputA) imgData.data[dataIndex * 4 + 3] = channelsData[3][noiseIndex] * 255;
+          else imgData.data[dataIndex * 4 + 3] = 255;
+        } else {
+          let channelId = 0;
+          if (settings.outputType === "normalR") channelId = 0;
+          if (settings.outputType === "normalG") channelId = 1;
+          if (settings.outputType === "normalB") channelId = 2;
+          if (settings.outputType === "normalA") channelId = 3;
+          const dx = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexL]) * settings.normalScale;
+          const dy = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexT]) * settings.normalScale;
+
+          // normalize
+          const length = Math.sqrt(dx * dx + dy * dy + 1.0);
+          imgData.data[dataIndex * 4 + 0] = ((-dx / length * 0.5) + 0.5) * 255;
+          imgData.data[dataIndex * 4 + 1] = ((-dy / length * 0.5) + 0.5) * 255;
+          imgData.data[dataIndex * 4 + 2] = 255;
+          imgData.data[dataIndex * 4 + 3] = 255;
+        }
       }
     }
     ctx.putImageData(imgData, posX, posY);
   }
+  
+  await delay(10);
+  generatingPlanel.style.opacity = 0;
 }
 
 function exportImage() {
@@ -470,10 +527,11 @@ function onLoadModalShown() {
       const listItem = document.createElement("button");
       listItem.className = "list-group-item list-group-item-action position-relative";
       listItem.innerHTML = key;
-      listItem.onclick = () => {
+      listItem.onclick = async () => {
         settings = settingsCollection[key];
         resizeCanvas();
-        generateNoise(true);
+        await generateNoise(true);
+        await drawCanvas();
         refreshUi();
         loadModal.hide();
       }

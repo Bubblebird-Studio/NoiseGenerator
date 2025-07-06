@@ -59,26 +59,50 @@
         </div>
 
         <p class="text-info" id="imageInfos"></p>
-        
+
         <div class="input-group mb-3">
-          <label class="input-group-text">Output channels</label>
+          <label class="input-group-text" for="outputType">Output / display</label>
+          <select class="form-select" id="outputType" oninput="update(false, true)">
+            <option value="default">Default</option>
+            <option value="normalR">Normal (R)</option>
+            <option value="normalG">Normal (G)</option>
+            <option value="normalB">Normal (B)</option>
+            <option value="normalA">Normal (A)</option>
+          </select>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lets you choose what to display or export">
+            <i class="bi bi-question"></i>
+          </span>
+        </div>
+
+        <div class="input-group mb-3" id="defaultOutputPanel">
           <div class="input-group-text">
-            <label for="displayChannelR">R&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelR" oninput="drawCanvas()">
+            <label for="outputR">R&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" id="outputR" oninput="update(false, true)">
           </div>
           <div class="input-group-text">
-            <label for="displayChannelG">G&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelG" oninput="drawCanvas()">
+            <label for="outputG">G&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" id="outputG" oninput="update(false, true)">
           </div>
           <div class="input-group-text">
-            <label for="displayChannelB">B&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelB" oninput="drawCanvas()">
+            <label for="outputB">B&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" id="outputB" oninput="update(false, true)">
           </div>
           <div class="input-group-text">
-            <label for="displayChannelA">A&nbsp;</label>
-            <input class="form-check-input mt-0" type="checkbox" checked id="displayChannelA" oninput="drawCanvas()">
+            <label for="outputA">A&nbsp;</label>
+            <input class="form-check-input mt-0" type="checkbox" id="outputA" oninput="update(false, true)">
           </div>
           <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose which channels to display and include in the file.">
+            <i class="bi bi-question"></i>
+          </span>
+        </div>
+
+        <div class="input-group mb-3" id="normalOutputPanel">
+          <label class="input-group-text" for="normalScale">Normal scale</label>
+          <div class="input-group-text">
+            <input type="range" class="form-range" min="0.0" max="10.0" step="0.1" id="normalScale" oninput="update(false, true)">
+          </div>
+          <label class="input-group-text" for="normalScale" id="normalScaleLabel"></label>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the strength of the normal map.">
             <i class="bi bi-question"></i>
           </span>
         </div>
