@@ -1,4 +1,4 @@
-## Online Noise Generation Tool
+# Online Noise Generation Tool
 
 This is a simple & free online noise generation tool. It allows you to easily create 2D or 3D seamless noise patterns for your projects and export them as png files.
 
@@ -14,6 +14,11 @@ You can freely use it here: https://noisegen.bubblebirdstudio.com/
 See it in action here:
 
 https://github.com/user-attachments/assets/6ca41bbb-35af-4b9d-847e-73384a086c5d
+
+## Export normal maps
+The latest version also implements an option to export normal maps
+
+![image](https://github.com/user-attachments/assets/fa2c69da-0792-4c80-b9a9-4d9c7c41ae3c)
 
 The code is published under the MIT License.
 
