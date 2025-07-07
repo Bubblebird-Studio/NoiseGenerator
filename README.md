@@ -13,12 +13,8 @@ You can freely use it here: https://noisegen.bubblebirdstudio.com/
 
 See it in action here:
 
-https://github.com/user-attachments/assets/6ca41bbb-35af-4b9d-847e-73384a086c5d
+https://github.com/user-attachments/assets/fa211af2-d280-4348-ba49-9b51c23d5f4e
 
-## Export normal maps
-The latest version also implements an option to export normal maps
-
-![image](https://github.com/user-attachments/assets/fa2c69da-0792-4c80-b9a9-4d9c7c41ae3c)
 
 The code is published under the MIT License.
 
