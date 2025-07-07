@@ -39,10 +39,10 @@ const defaultSettings = {
   layout: "auto",
   activeChannel: 0,
   channels: [
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
   ],
   outputType: "default",
   outputR: true,
@@ -82,6 +82,7 @@ async function update(clear = false, redrawOnly = false) {
   channelSettings.perlinOctaves = document.getElementById("perlinOctaves").value;
   channelSettings.perlinLacunarity = document.getElementById("perlinLacunarity").value;
   channelSettings.voronoiCellSize = document.getElementById("voronoiCellSize").value;
+  channelSettings.voronoiFalloff = document.getElementById("voronoiFalloff").value;
   channelSettings.blueNoiseRadius = document.getElementById("blueNoiseRadius").value;
 
   if (clear) resizeCanvas();
@@ -109,6 +110,7 @@ function refreshUi() {
   document.getElementById("perlinOctaves").value = document.getElementById("perlinOctavesLabel").textContent = channelSettings.perlinOctaves;
   document.getElementById("perlinLacunarity").value = document.getElementById("perlinLacunarityLabel").textContent = channelSettings.perlinLacunarity;
   document.getElementById("voronoiCellSize").value = document.getElementById("voronoiCellSizeLabel").textContent = channelSettings.voronoiCellSize;
+  document.getElementById("voronoiFalloff").value = document.getElementById("voronoiFalloffLabel").textContent = channelSettings.voronoiFalloff;
   document.getElementById("blueNoiseRadius").value = document.getElementById("blueNoiseRadiusLabel").textContent = channelSettings.blueNoiseRadius;
   document.getElementById("seamless").checked = channelSettings.seamless;
   document.getElementById("seed").value = channelSettings.seed;
@@ -308,7 +310,7 @@ function generateSimplexNoise(seed, width, height, depth, seamless, scale, fract
   return imgData;
 }
 
-function generateVoronoiNoise(seed, width, height, depth, seamless, gridSize) {
+function generateVoronoiNoise(seed, width, height, depth, seamless, gridSize, falloff) {
   const prng = splitmix32(seed);
   const imgData = []
   const points = []
@@ -355,7 +357,7 @@ function generateVoronoiNoise(seed, width, height, depth, seamless, gridSize) {
           }
         }
         const index = x + width * y + width * height * z;
-        imgData[index] = Math.sqrt(minDist) / gridSize;
+        imgData[index] = Math.pow(Math.sqrt(minDist) / gridSize, falloff);
       }
     }
   }
@@ -433,7 +435,7 @@ async function generateNoise(allChannels = false) {
     if (channelSettings.type === "perlin")
       channelsData[c] = generateSimplexNoise(seed, width, height, depth, seamless, channelSettings.perlinSize * settings.resolution, channelSettings.perlinOctaves, channelSettings.perlinLacunarity);
     if (channelSettings.type === "voronoi")
-      channelsData[c] = generateVoronoiNoise(seed, width, height, depth, seamless, channelSettings.voronoiCellSize * settings.resolution);
+      channelsData[c] = generateVoronoiNoise(seed, width, height, depth, seamless, channelSettings.voronoiCellSize * settings.resolution, channelSettings.voronoiFalloff);
     if (channelSettings.type === "blueNoise")
       channelsData[c] = generateBlueNoise(seed, width, height, depth, seamless, channelSettings.blueNoiseRadius);
   }
@@ -473,8 +475,8 @@ async function drawCanvas() {
           if (settings.outputType === "normalG") channelId = 1;
           if (settings.outputType === "normalB") channelId = 2;
           if (settings.outputType === "normalA") channelId = 3;
-          const dx = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexL]) * settings.normalScale;
-          const dy = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexT]) * settings.normalScale;
+          const dx = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexL]) * settings.resolution * settings.normalScale * 0.1;
+          const dy = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexT]) * settings.resolution * settings.normalScale * 0.1;
 
           // normalize
           const length = Math.sqrt(dx * dx + dy * dy + 1.0);

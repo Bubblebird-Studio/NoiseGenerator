@@ -99,7 +99,7 @@
         <div class="input-group mb-3" id="normalOutputPanel">
           <label class="input-group-text" for="normalScale">Normal scale</label>
           <div class="input-group-text">
-            <input type="range" class="form-range" min="0.0" max="10.0" step="0.1" id="normalScale" oninput="update(false, true)">
+            <input type="range" class="form-range" min="0.0" max="2.0" step="0.01" id="normalScale" oninput="update(false, true)" ondblclick="this.value = defaultSettings.normalScale; update(false, true)">
           </div>
           <label class="input-group-text" for="normalScale" id="normalScaleLabel"></label>
           <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the strength of the normal map.">
@@ -195,7 +195,7 @@
             <div class="input-group mb-3">
               <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" oninput="update()">
+                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" oninput="update()" ondblclick="this.value = defaultSettings.channels[0].perlinLacunarity; update()">
               </div>
               <label class="input-group-text" for="perlinLacunarity" id="perlinLacunarityLabel"></label>
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
@@ -211,6 +211,17 @@
                 <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" id="voronoiCellSize" oninput="update()">
               </div>
               <label class="input-group-text" for="voronoiCellSize" id="voronoiCellSizeLabel"></label>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="voronoiFalloff">Falloff</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" id="voronoiFalloff" oninput="update()" ondblclick="this.value = defaultSettings.channels[0].voronoiFalloff; update()">
+              </div>
+              <label class="input-group-text" for="voronoiFalloff" id="voronoiFalloffLabel"></label>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the curve of the gradient. For a linear gradient, use 1.0.">
+                <i class="bi bi-question"></i>
+              </span>
             </div>
           </div>
 
