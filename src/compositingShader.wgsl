@@ -1,6 +1,7 @@
 
 @group(0) @binding(0) var<uniform> settings: Settings;
 @group(0) @binding(1) var<storage, read_write> noiseBuffer: array<f32>;
+@group(0) @binding(2) var<storage, read_write> outputBuffer: array<f32>;
 
 @vertex
 fn vertex(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
@@ -37,10 +38,11 @@ fn fragment(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
   let fragY = u32(fragCoord.y);
   let tileX = fragX / resolutionX;
   let tileY = fragY / resolutionY;
-  let x = (fragX) % resolutionX;
-  let y = (fragY) % resolutionY;
+  let x = fragX % resolutionX;
+  let y = fragY % resolutionY;
   let z = tileX + xTiles * tileY;
 
+  let outputIndex = fragX + (resolutionX * xTiles) * fragY;
   let index = x + resolutionX * y + resolutionX * resolutionY * z;
   let indexL = ((x + 1) % resolutionX) + resolutionX * y + resolutionX * resolutionY * z;
   let indexB = x + resolutionX * ((y + 1) % resolutionY) + resolutionX * resolutionY * z;
@@ -74,5 +76,11 @@ fn fragment(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
   if (channel2invert) { outputG = 1.0 - outputB; };
   if (channel3invert) { outputA = 1.0 - outputA; };
 
-  return vec4<f32>(outputR, outputG, outputB, outputA);
+  let output = vec4<f32>(outputR, outputG, outputB, outputA);
+
+  outputBuffer[outputIndex * 4 + 0] = output.r;
+  outputBuffer[outputIndex * 4 + 1] = output.g;
+  outputBuffer[outputIndex * 4 + 2] = output.b;
+  outputBuffer[outputIndex * 4 + 3] = output.a;
+  return output;
 }

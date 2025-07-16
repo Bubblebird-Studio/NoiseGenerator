@@ -141,7 +141,7 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiCellSize">Cell size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="1.0" max="100.0" step="0.1" v-model="activeGenerator.voronoiCellSize">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize">
               </div>
               <label class="input-group-text" for="voronoiCellSize">{{ activeGenerator.voronoiCellSize }}</label>
             </div>
@@ -209,6 +209,14 @@
         <ul class="nav nav-tabs">
           <li class="nav-item">
             <a class="nav-link disabled" aria-disabled="true">Swizzle</a>
+          </li>
+          <li class="nav-item dropdown">
+            <button class="nav-link dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="true">Presets</button>
+            <ul class="dropdown-menu">
+              <li><span class="dropdown-item disabled" href="#">Choose a preset</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a v-for="(channelPreset, i) in channelsPresets" class="dropdown-item" role="button" @click="onPresetSelection(i)">{{ i }}</a></li>
+            </ul>
           </li>
           <li class="nav-item">
             <a class="nav-link channel-nav" :class="{'active': settings.activeChannel == 0}" role="button" data-channel=0 @click="settings.activeChannel = 0">R</a>
@@ -301,7 +309,7 @@
             <label for="recipient-name" class="col-form-label">Choose a setting to load:</label>
             <div class="list-group">
               <div v-for="setting in settingsCollection">
-                <button type="button" class="list-group-item list-group-item-action position-relative" @click="loadSetting(setting)">
+                <button type="button" class="list-group-item list-group-item-action position-relative" @click.stop="loadSetting(setting)">
                   {{ setting.name }}
                 </button>
                 <button type="button" class="btn position-absolute top-50 end-0 translate-middle" @click.stop="removeSetting(setting)">
@@ -323,7 +331,7 @@
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, reactive , onMounted, watch } from "vue";
 import { getRandomSeed, createBuffer, createPipeline } from "./utils.ts";
-import { Tooltip } from "bootstrap";
+//import { Tooltip, Dropdown } from "bootstrap";
 import utilsShader from "./utils.wgsl?raw" with { type: "text" };
 import computeShader from "./computeShader.wgsl?raw" with { type: "text" };
 import compositingShader from "./compositingShader.wgsl?raw" with { type: "text" };
@@ -335,13 +343,14 @@ let computeModule: any;
 let compositingModule: any;
 let uniformBuffer: any;
 let noiseBuffer: any;
+let outputBuffer: any;
 let computePipeline: any;
 let compositingPipeline: any;
 
 const noiseTypes = ["Random", "Perlin", "Voronoi"];
 const sourceTypes = ["Value", "Normal X", "Normal Y", "0", "1"];
 const channelsData = [];
-const generating = ref(true);
+const generating = ref(false);
 const canvas = useTemplateRef("canvas");
 const initialSeed = getRandomSeed();
 
@@ -352,7 +361,7 @@ const defaultGeneratorSettings = {
   perlinSize: 0.1,
   perlinOctaves: 1,
   perlinLacunarity: 2.0,
-  voronoiCellSize: 10.0,
+  voronoiCellSize: 0.2,
   voronoiFalloff: 1.0,
   voronoiWeight1: 1.0,
   voronoiWeight2: 0.0,
@@ -361,10 +370,49 @@ const defaultGeneratorSettings = {
   blueNoiseRadius: 1.5
 }
 
-const defaultChannelSettings = {
-  generator: 0,
-  type: 0,
-  invert: false 
+const channelsPresets = {
+    "Default": [
+      { generator: 0, type: 0, invert: false },
+      { generator: 0, type: 0, invert: false },
+      { generator: 0, type: 0, invert: false },
+      { generator: 3, type: 4, invert: false },
+    ],
+    "Each generator its channel": [
+      { generator: 0, type: 0, invert: false },
+      { generator: 0, type: 3, invert: false },
+      { generator: 0, type: 3, invert: false },
+      { generator: 0, type: 4, invert: false },
+    ],
+    "Generator 0 to Normal map (OpenGL)": [
+      { generator: 0, type: 1, invert: false },
+      { generator: 0, type: 2, invert: false },
+      { generator: 0, type: 4, invert: false },
+      { generator: 0, type: 4, invert: false },
+    ],
+    "Generator 0 to Normal map (DirectX)": [
+      { generator: 0, type: 1, invert: false },
+      { generator: 0, type: 2, invert: true },
+      { generator: 0, type: 4, invert: false },
+      { generator: 0, type: 4, invert: false },
+    ],
+    "Generator 0 to red channel": [
+      { generator: 0, type: 0, invert: false },
+      { generator: 0, type: 3, invert: false },
+      { generator: 0, type: 3, invert: false },
+      { generator: 0, type: 4, invert: false },
+    ],
+    "Generator 1 to green channel": [
+      { generator: 0, type: 3, invert: false },
+      { generator: 1, type: 0, invert: false },
+      { generator: 0, type: 3, invert: false },
+      { generator: 0, type: 4, invert: false },
+    ],
+    "Generator 2 to blue channel": [
+      { generator: 0, type: 3, invert: false },
+      { generator: 0, type: 3, invert: false },
+      { generator: 2, type: 0, invert: false },
+      { generator: 0, type: 4, invert: false },
+    ],
 }
 
 const defaultSettings = {
@@ -375,7 +423,7 @@ const defaultSettings = {
   activeGenerator: 0,
   generators: [defaultGeneratorSettings, defaultGeneratorSettings, defaultGeneratorSettings, defaultGeneratorSettings],
   activeChannel: 0,
-  channels: [defaultChannelSettings, defaultChannelSettings, defaultChannelSettings, defaultChannelSettings],
+  channels: channelsPresets["Default"],
   normalScale: 1.0,
 }
 
@@ -424,7 +472,7 @@ watch(settings, (newValue, oldValue) => {
 })
 
 onMounted(async () => {
-  [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels
+  [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels
   const adapter = await navigator.gpu.requestAdapter();
   device = await adapter.requestDevice({
     requiredLimits: {
@@ -495,10 +543,16 @@ function setupRenderPipeline() {
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
   });
 
+  outputBuffer = device.createBuffer({
+    size: canvasWidth.value * canvasHeight.value * 4 * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
+
   const bindGroupLayout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' }, },
       { binding: 1, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: 'storage' }, },
+      { binding: 2, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: 'storage' }, },
     ],
   });
   const pipelineLayout = device.createPipelineLayout({
@@ -533,9 +587,9 @@ function setupRenderPipeline() {
 }
 
 
-async function generateNoise(allChannels: boolean) {
-  console.log("generating noise")
-  generating.value = true;
+function generateNoise(allChannels: boolean) {
+  console.log("generating noise");
+  //generating.value = true;
   const resolutionX = settings.resolution;
   const resolutionY = settings.resolution;
   const resolutionZ = is3d.value ? settings.resolution : 1;
@@ -549,7 +603,8 @@ async function generateNoise(allChannels: boolean) {
     layout: computePipeline.getBindGroupLayout(0),
     entries: [
       { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: noiseBuffer } }
+      { binding: 1, resource: { buffer: noiseBuffer } },
+      { binding: 2, resource: { buffer: outputBuffer } },
     ]
   });
 
@@ -557,7 +612,8 @@ async function generateNoise(allChannels: boolean) {
     layout: compositingPipeline.getBindGroupLayout(0),
     entries: [
       { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: noiseBuffer } }
+      { binding: 1, resource: { buffer: noiseBuffer } },
+      { binding: 2, resource: { buffer: outputBuffer } },
     ]
   });
 
@@ -589,30 +645,11 @@ async function generateNoise(allChannels: boolean) {
 
   device.queue.submit([commandEncoder.finish()]);
 
-  // for (let c = 0; c < 4; c++) {
-  //   if (c != settings.activeGenerator && allChannels == false) continue;
-  //   const channelSettings = settings.channels[c];
-  //   const seed = channelSettings.seed;
-  //   const seamless = channelSettings.seamless;
-  //   const scale = 1.0;
+  //generating.value = false;
+}
 
-  //   channelsData[c] = await computeNoise(testComputeShader, seed, width, height, depth, seamless, scale);
-
-  //   // if (channelSettings.type === "none")
-  //   //   channelsData[c] = generateNone(seed, width, height, depth, seamless);
-  //   // if (channelSettings.type === "random")
-  //   //   channelsData[c] = generateRandomNoise(seed, width, height, depth, seamless);
-  //   // if (channelSettings.type === "perlin")
-  //   //   channelsData[c] = generateSimplexNoiseGPU(seed, width, height, depth, seamless, channelSettings.perlinSize * settings.resolution, channelSettings.perlinOctaves, channelSettings.perlinLacunarity);
-  //   // if (channelSettings.type === "voronoi")
-  //   //   channelsData[c] = generateVoronoiNoise(seed, width, height, depth, seamless, channelSettings.voronoiCellSize * settings.resolution, channelSettings.voronoiFalloff);
-  //   // if (channelSettings.type === "blueNoise")
-  //   //   channelsData[c] = generateBlueNoise(seed, width, height, depth, seamless, channelSettings.blueNoiseRadius);
-  // }
-
-  //drawCanvas();
-
-  generating.value = false;
+function onPresetSelection(channelPresetName) {
+  settings.channels = structuredClone(channelsPresets[channelPresetName]);
 }
 
 
@@ -759,16 +796,58 @@ async function generateNoise(allChannels: boolean) {
 // }
 
 
-function exportImage() {
+async function getImageData() {
+  const resultBuffer = device.createBuffer({
+    size: canvasWidth.value * canvasHeight.value * 4 * 4,
+    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+  });
+  const encoder = device.createCommandEncoder();
+  encoder.copyBufferToBuffer(outputBuffer, 0, resultBuffer, 0, canvasWidth.value * canvasHeight.value * 4 * 4);
+  device.queue.submit([encoder.finish()]);
+
+  await resultBuffer.mapAsync(GPUMapMode.READ);
+  const floatArray = new Float32Array(resultBuffer.getMappedRange().slice());
+  resultBuffer.unmap();
+  resultBuffer.destroy();
+
+  const clampedArray = new Uint8ClampedArray(canvasWidth.value * canvasHeight.value * 4);
+
+  for (let i = 0; i < clampedArray.length; i++) {
+    const val = floatArray[i];
+    clampedArray[i] = Math.max(0, Math.min(255, val <= 1 ? val * 255 : val));
+  }
+
+  return new ImageData(clampedArray, canvasWidth.value, canvasHeight.value);
+}
+
+
+async function exportImage() {
+  generating.value = true;
+  const imageData = await getImageData();
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasWidth.value;
+  canvas.height = canvasHeight.value;
+  canvas.getContext("2d").putImageData(imageData, 0, 0);
+
   const link = document.createElement("a");
   link.download = `${settings.name}.png`;
-  link.href = canvas.value?.toDataURL("image/png") || "";
+  link.href = canvas.toDataURL("image/png") || "";
   link.click();
+
+  link.remove();
+  canvas.remove();
+  generating.value = false;
 }
 
 async function copyImageToClipboard() {
   try {
-    const blob = await new Promise(resolve => canvas.value?.toBlob(resolve));
+    const imageData = await getImageData();
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth.value;
+    canvas.height = canvasHeight.value;
+    canvas.getContext("2d").putImageData(imageData, 0, 0);
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
     const item = new ClipboardItem({ 'image/png': blob as Blob });
     await navigator.clipboard.write([item]);
     alert("Image copied to clipboard!");
@@ -777,12 +856,10 @@ async function copyImageToClipboard() {
   }
 }
 
-async function loadSetting(setting: any) {
-  // resizeCanvas();
-  // await generateNoise(true);
-  // await drawCanvas();
-  // refreshUi();
-  // loadModal.hide();
+async function loadSetting(loadedSettings: any) {
+  Object.assign(settings, loadedSettings);
+  setupRenderPipeline();
+  //loadModal.hide();
 }
 
 function removeSetting(setting: any) {

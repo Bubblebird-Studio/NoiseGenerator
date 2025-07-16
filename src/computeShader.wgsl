@@ -71,11 +71,12 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
   }
 
   if (noiseType == NOISE_TYPE_VORONOI) {
-    let gridResolution = vec3<i32>(floor(max(vec3<f32>(1.0), vec3<f32>(resolution) / voronoiCellSize)));
-    let tileSize = vec3<f32>(gridResolution) * voronoiCellSize;
+    let cellSize = voronoiCellSize * f32(resolutionX);
+    let gridResolution = vec3<i32>(max(vec3<f32>(1.0), vec3<f32>(resolution) / cellSize));
+    let tileSize = vec3<f32>(gridResolution) * cellSize;
 
     let position = vec3<f32>(f32(x), f32(y), f32(z)) / vec3<f32>(resolution) * tileSize;
-    let cell = vec3<i32>(floor(position / voronoiCellSize));
+    let cell = vec3<i32>(floor(position / cellSize));
 
     let weights = vec4<f32>(voronoiWeight1, voronoiWeight2, voronoiWeight3, voronoiWeight4);
     var minDistances = vec4<f32>(999999.0, 999999.0, 999999.0, 999999.0);
@@ -83,20 +84,24 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
     for (var dx = -1; dx <= 1; dx++) {
       for (var dy = -1; dy <= 1; dy++) {
         for (var dz = -1; dz <= 1; dz++) {
-          let neighbor_cell = cell + vec3<i32>(dx, dy, dz);
-          let wrapped_cell = modulo_i32(neighbor_cell, gridResolution);
+          var neighbor_cell = cell + vec3<i32>(dx, dy, dz);
+          if (seamless) {
+            neighbor_cell = modulo_i32(neighbor_cell, gridResolution);
+          }
 
-          let feature_point = (vec3<f32>(wrapped_cell) + RandVector(Hash_vec3_i32(wrapped_cell) + seed)) * voronoiCellSize;
-          let delta = feature_point - position;
-          let deltaWrapped = min(abs(delta), tileSize - abs(delta)); // toroidal distance
-          let dist = length(deltaWrapped) / voronoiCellSize;
+          let feature_point = (vec3<f32>(neighbor_cell) + RandVector(Hash_vec3_i32(neighbor_cell) + seed)) * cellSize;
+          var delta = feature_point - position;
+          if (seamless) {
+            delta = min(abs(delta), tileSize - abs(delta)); // toroidal distance
+          }
+          let dist = length(delta) / cellSize;
 
           minDistances = insert_sorted(minDistances, dist);
         }
       }
     }
 
-    output = dot(minDistances, weights);
+    output = pow(dot(minDistances, weights), voronoiFalloff);
   }
   
 
