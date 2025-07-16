@@ -3,7 +3,7 @@
 @group(0) @binding(1) var<storage, read_write> noiseBuffer: array<f32>;
 
 
-fn insert_sorted(distances: vec4<f32>, value: f32) -> vec4<f32> {
+fn InsertSorted(distances: vec4<f32>, value: f32) -> vec4<f32> {
     var d = distances;
 
     if (value < d.x) {
@@ -45,15 +45,11 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
   let seamless = u32(settings.seamless) != 0u;
   let seed = u32(settings.seed);
 
-  //let tileResolutionX = width / xTiles;
-  //let tileResolutionY = height / yTiles;
-
   let x = coord.x;
   let y = coord.y;
   let z = coord.z;
   
   let resolution = vec3<u32>(resolutionX, resolutionY, resolutionZ);
-  //let resolution = vec3<f32>(f32(resolutionX), f32(resolutionY), f32(resolutionZ));
   let index = x + resolutionX * y + resolutionX * resolutionY * z;
   var output = 0.0;
 
@@ -94,9 +90,9 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
           if (seamless) {
             delta = min(abs(delta), tileSize - abs(delta)); // toroidal distance
           }
-          let dist = length(delta) / cellSize;
+          let dist = length(delta); // / cellSize;
 
-          minDistances = insert_sorted(minDistances, dist);
+          minDistances = InsertSorted(minDistances, dist);
         }
       }
     }
@@ -104,6 +100,5 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
     output = pow(dot(minDistances, weights), voronoiFalloff);
   }
   
-
   noiseBuffer[index * 4 + generatorIndex] = output;
 }

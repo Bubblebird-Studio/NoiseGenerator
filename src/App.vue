@@ -7,6 +7,11 @@
       <p><small>A simple random noise generator by Bubblebird Studio. <a href="https://bubblebirdstudio.com/" target="_blank">Buy our games</a> to support this tool!</small></p>
     </div>
 
+    <div v-if="error != ''" class="alert alert-danger" role="alert">
+      <p>{{ error }}</p>
+      <p>Open an issue on <a href="https://github.com/Bubblebird-Studio/NoiseGenerator">Github</a> to let us know what went wrong.</p>
+    </div>
+
     <div class="row">
       <div class="col-md-auto">
         <div class="viewer overflow-auto">
@@ -15,7 +20,7 @@
               <span class="visually-hidden">Generating...</span>
             </div>
           </div>
-          <canvas ref="canvas"></canvas>
+          <canvas width="256" height="256" ref="canvas"></canvas>
         </div>
 
         <p class="text-info">
@@ -30,23 +35,9 @@
           <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="modal" data-bs-target="#loadBackdrop"><i class="bi bi-floppy"></i> Load...</button>
           <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="modal" data-bs-target="#saveBackdrop"><i class="bi bi-floppy"></i> Save...</button>
         </div>
-
-        <!-- <div v-else class="input-group mb-3">
-          <label class="input-group-text" for="normalScale">Normal scale</label>
-          <div class="input-group-text">
-            <input type="range" class="form-range" min="0.0" max="2.0" step="0.01" v-model="settings.normalScale" @dblclick="settings.normalScale = defaultSettings.normalScale">
-          </div>
-          <label class="input-group-text" for="normalScale">{{ settings.normalScale }}</label>
-          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the strength of the normal map.">
-            <i class="bi bi-question"></i>
-          </span>
-        </div> -->
       </div>
 
       <div class="col">
-        <!-- <div class="input-group mb-3">
-          <h3>{{ settings.name }}</h3>
-        </div> -->
 
         <div class="input-group mb-3">
           <label class="input-group-text" for="resolution">Resolution</label>
@@ -128,7 +119,7 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.channels[0].perlinLacunarity">
+                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.generators[0].perlinLacunarity">
               </div>
               <label class="input-group-text" for="perlinLacunarity">{{ activeGenerator.perlinLacunarity }}</label>
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
@@ -176,7 +167,7 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiFalloff">Falloff</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" id="voronoiFalloff" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.channels[0].voronoiFalloff">
+                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" id="voronoiFalloff" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.generators[0].voronoiFalloff">
               </div>
               <label class="input-group-text" for="voronoiFalloff">{{ activeGenerator.voronoiFalloff }}</label>
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the curve of the gradient. For a linear gradient, use 1.0.">
@@ -252,6 +243,17 @@
               <i class="bi bi-question"></i>
             </span>
           </div>
+
+          <!-- <div v-else class="input-group mb-3">
+            <label class="input-group-text" for="normalScale">Normal scale</label>
+            <div class="input-group-text">
+              <input type="range" class="form-range" min="0.0" max="2.0" step="0.01" v-model="settings.normalScale" @dblclick="settings.normalScale = defaultSettings.normalScale">
+            </div>
+            <label class="input-group-text" for="normalScale">{{ settings.normalScale }}</label>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the strength of the normal map.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div> -->
 
           <div class="input-group mb-3">
             <label class="input-group-text" for="invert">Invert</label>
@@ -336,6 +338,7 @@ import utilsShader from "./utils.wgsl?raw" with { type: "text" };
 import computeShader from "./computeShader.wgsl?raw" with { type: "text" };
 import compositingShader from "./compositingShader.wgsl?raw" with { type: "text" };
 
+let initialized = false;
 let device: any;
 let context: any;
 let format: any;
@@ -351,6 +354,7 @@ const noiseTypes = ["Random", "Perlin", "Voronoi"];
 const sourceTypes = ["Value", "Normal X", "Normal Y", "0", "1"];
 const channelsData = [];
 const generating = ref(false);
+const error = ref("");
 const canvas = useTemplateRef("canvas");
 const initialSeed = getRandomSeed();
 
@@ -473,21 +477,29 @@ watch(settings, (newValue, oldValue) => {
 
 onMounted(async () => {
   [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels
-  const adapter = await navigator.gpu.requestAdapter();
-  device = await adapter.requestDevice({
-    requiredLimits: {
-      maxBufferSize: 2147483644,
-      maxStorageBufferBindingSize: 2147483644,
-      maxTextureDimension2D: 16384
-    }
-  });
-  context = canvas.value?.getContext("webgpu");
-  format = navigator.gpu.getPreferredCanvasFormat();
-  computeModule = device.createShaderModule({ code: utilsShader + computeShader }),
-  compositingModule = device.createShaderModule({ code: utilsShader + compositingShader });
-  context.configure({ device, format, alphaMode: "opaque" });
-  setupRenderPipeline();
-  await generateNoise(true);
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    device = await adapter.requestDevice({
+      requiredLimits: {
+        maxBufferSize: 2147483644,
+        maxStorageBufferBindingSize: 2147483644,
+        maxTextureDimension2D: 16384
+      }
+    });
+    context = canvas.value?.getContext("webgpu");
+    if (!context) throw new Error("Can't get the webgpu context");
+    format = navigator.gpu.getPreferredCanvasFormat();
+    computeModule = device.createShaderModule({ code: utilsShader + computeShader }),
+    compositingModule = device.createShaderModule({ code: utilsShader + compositingShader });
+    context.configure({ device, format, alphaMode: "opaque" });
+    initialized = true;
+    setupRenderPipeline();
+    await generateNoise(true);
+  } catch(e) {
+    error.value = `Your browser doesn't support webGPU! error: ${e.message}`;
+    console.error(e);
+    initialized = false;
+  }
 })
 
 
@@ -528,6 +540,7 @@ function GetUniformData(generator: number) {
 
 
 function setupRenderPipeline() {
+  if (initialized == false) return;
   const resolutionX = settings.resolution;
   const resolutionY = settings.resolution;
   const resolutionZ = is3d.value ? settings.resolution : 1;
@@ -590,6 +603,7 @@ function setupRenderPipeline() {
 
 
 function generateNoise(allChannels: boolean) {
+  if (initialized == false) return;
   const resolutionX = settings.resolution;
   const resolutionY = settings.resolution;
   const resolutionZ = is3d.value ? settings.resolution : 1;
