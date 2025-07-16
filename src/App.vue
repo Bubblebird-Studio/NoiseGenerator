@@ -1,0 +1,727 @@
+<template>
+  <div class="container text-center" :style="{'max-width': '1000px'}">
+    <div class="row m-5">
+      <div class="position-relative">
+        <h1 class="display-3">Noise Generator</h1><span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">New version</span>
+      </div>
+      <p><small>A simple random noise generator by Bubblebird Studio. <a href="https://bubblebirdstudio.com/" target="_blank">Buy our games</a> to support this tool!</small></p>
+    </div>
+
+    <div class="row">
+      <div class="col-md-auto">
+        <div class="viewer overflow-auto">
+          <div v-if="generating" id="generatingPlanel">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Generating...</span>
+            </div>
+          </div>
+          <canvas ref="canvas"></canvas>
+        </div>
+
+        <p class="text-info" id="imageInfos"></p>
+
+        <div class="btn-group" role="group">
+          <button class="btn btn-primary mt-3" type="button" @click="exportImage()"><i class="bi bi-download"></i> Export PNG</button>
+          <button class="btn btn-secondary mt-3" type="button" @click="copyImageToClipboard()"><i class="bi bi-copy"></i> Copy</button>
+          <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="modal" data-bs-target="#loadBackdrop"><i class="bi bi-floppy"></i> Load...</button>
+          <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="modal" data-bs-target="#saveBackdrop"><i class="bi bi-floppy"></i> Save...</button>
+        </div>
+
+        <!-- <div v-else class="input-group mb-3">
+          <label class="input-group-text" for="normalScale">Normal scale</label>
+          <div class="input-group-text">
+            <input type="range" class="form-range" min="0.0" max="2.0" step="0.01" v-model="settings.normalScale" @dblclick="settings.normalScale = defaultSettings.normalScale">
+          </div>
+          <label class="input-group-text" for="normalScale">{{ settings.normalScale }}</label>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the strength of the normal map.">
+            <i class="bi bi-question"></i>
+          </span>
+        </div> -->
+      </div>
+
+      <div class="col">
+        <div class="input-group mb-3">
+          <h3>{{ settings.name }}</h3>
+        </div>
+
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="resolution">Resolution</label>
+          <div class="input-group-text">
+            <input type="range" class="form-range" min="3" max="10" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
+          </div>
+          <label class="input-group-text" for="resolution">{{ settings.resolution }}</label>
+        </div>
+
+        <div class="input-group mb-3">
+          <label class="input-group-text" for="dimension">Dimension</label>
+          <select class="form-select" v-model="settings.dimension">
+            <option value="2d">2D</option>
+            <option value="3d">3D</option>
+          </select>
+          <span v-if="settings.dimension == '3d' && settings.resolution > 256" class="input-group-text text-danger" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Resolution is too high for 3d. Generating an image will fall back to 2d.">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </span>
+        </div>
+
+        <div v-if="settings.dimension == '3d'" class="input-group mb-3">
+          <label class="input-group-text" for="layout">3D tiles layout</label>
+          <select class="form-select" v-model="settings.layout">
+            <option value="auto">Auto</option>
+            <option value="square">Square</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+          <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lets you choose how to arrange the tiles (the slices of your volume texture) in 2D.">
+            <i class="bi bi-question"></i>
+          </span>
+        </div>
+
+        <!-- ################  GENERATORS  ################ -->
+        <ul class="nav nav-tabs">
+          <li class="nav-item">
+            <a class="nav-link disabled" aria-disabled="true">Generators</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 0}" role="button" data-channel=0 @click="settings.activeGenerator = 0">0</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 1}" role="button" data-channel=1 @click="settings.activeGenerator = 1">1</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 2}" role="button" data-channel=2 @click="settings.activeGenerator = 2">2</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 3}" role="button" data-channel=3 @click="settings.activeGenerator = 3">3</a>
+          </li>
+        </ul>
+
+        <div class="col border-start border-end border-bottom p-3 mb-3">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="type">Type</label>
+            <select class="form-select" v-model="activeGenerator.type">
+              <option value="random">Random</option>
+              <option value="perlin">Perlin</option>
+              <option value="voronoi">Voronoi</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+
+          <div v-if="activeGenerator.type == 'perlin'" class="settings m-3">
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="perlinSize">Scale</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="0.4" step="0.01" v-model="activeGenerator.perlinSize">
+              </div>
+              <label class="input-group-text" for="perlinSize">{{ activeGenerator.perlinSize }}</label>
+            </div>
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="perlinOctaves">Octaves</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="1" max="10" step="1" v-model="activeGenerator.perlinOctaves">
+              </div>
+              <label class="input-group-text" for="perlinOctaves">{{ activeGenerator.perlinOctaves }}</label>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sets the number of noise layers combined to create fractal detail.">
+                <i class="bi bi-question"></i>
+              </span>
+            </div>
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.channels[0].perlinLacunarity">
+              </div>
+              <label class="input-group-text" for="perlinLacunarity">{{ activeGenerator.perlinLacunarity }}</label>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
+                <i class="bi bi-question"></i>
+              </span>
+            </div>
+          </div>
+
+          <div v-if="activeGenerator.type == 'voronoi'" class="settings m-3">
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="voronoiCellSize">Cell size</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize">
+              </div>
+              <label class="input-group-text" for="voronoiCellSize">{{ activeGenerator.voronoiCellSize }}</label>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="voronoiFalloff">Falloff</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.channels[0].voronoiFalloff">
+              </div>
+              <label class="input-group-text" for="voronoiFalloff">{{ activeGenerator.voronoiFalloff }}</label>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the curve of the gradient. For a linear gradient, use 1.0.">
+                <i class="bi bi-question"></i>
+              </span>
+            </div>
+          </div>
+
+          <div v-if="activeGenerator.type == 'bluenoise'" class="settings m-3">
+            <div class="input-group mb-3">
+              <label class="input-group-text" for="blueNoiseRadius">Radius</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="0.01" max="2" step="0.01" v-model="activeGenerator.blueNoiseRadius">
+              </div>
+              <label class="input-group-text" for="blueNoiseRadius">{{ activeGenerator.blueNoiseRadius }}</label>
+            </div>
+          </div>
+
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="seamless">Seamless</label>
+            <div class="input-group-text">
+              <input class="form-check-input mt-0" type="checkbox" v-model="activeGenerator.seamless">
+            </div>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Makes the image tileable.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group-text" for="seed">Seed</label>
+            <input type="number" class="form-control" v-model="activeGenerator.seed">
+            <button class="btn btn-outline-secondary" type="button" @click="activeGenerator.seed = getRandomSeed()"><i class="bi bi-arrow-clockwise"></i></button>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Defines the starting point for random number generation, producing different noise patterns.">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- ################  SWIZZLE  ################ -->
+        <ul class="nav nav-tabs">
+          <li class="nav-item">
+            <a class="nav-link disabled" aria-disabled="true">Channels mapping</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeChannel == 0}" role="button" data-channel=0 @click="settings.activeChannel = 0">R</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeChannel == 1}" role="button" data-channel=1 @click="settings.activeChannel = 1">G</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeChannel == 2}" role="button" data-channel=2 @click="settings.activeChannel = 2">B</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link channel-nav" :class="{'active': settings.activeChannel == 3}" role="button" data-channel=3 @click="settings.activeChannel = 3">A</a>
+          </li>
+        </ul>
+
+        <div class="col border-start border-end border-bottom p-3 mb-3">
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="channel">Source</label>
+            <select class="form-select" v-model="activeChannel" id="channel">
+              <option v-for="(channelType, i) in channelTypes" :value="i">{{ channelType }}</option>
+            </select>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose the source for this channel of the image">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="row m-5">
+        <p class="text-secondary"><a href="mailto:contact@bubblebirdstudio.com">Contact us</a> for feature request or bug report. Visit the <a href="https://github.com/Bubblebird-Studio/NoiseGenerator">Github project page</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- save as modal -->
+  <div class="modal fade" id="saveBackdrop" data-bs-keyboard="false" tabindex="-1" aria-labelledby="saveBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="saveBackdropLabel"><i class="bi bi-floppy"></i> Save your settings</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="recipient-name" class="col-form-label">Choose a name for these settings:</label>
+            <input type="text" class="form-control mb-2" v-model="settings.name">
+            <p class="text-warning">
+              <i class="bi bi-info-circle"></i> Settings are saved in your browser only (localStorage). 
+              If you clear the cache or data for this domain, you will lose them.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveSettings()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- load modal -->
+  <div class="modal fade" id="loadBackdrop" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loadBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="loadBackdropLabel"><i class="bi bi-floppy"></i> Load settings</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="recipient-name" class="col-form-label">Choose a setting to load:</label>
+            <div class="list-group">
+              <div v-for="setting in settingsCollection">
+                <button type="button" class="list-group-item list-group-item-action position-relative" @click="loadSetting(setting)">
+                  {{ setting.name }}
+                </button>
+                <button type="button" class="btn position-absolute top-50 end-0 translate-middle" @click.stop="removeSetting(setting)">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+              <div v-if="Object.keys(settingsCollection).length == 0"><p class="text-info"><i class="bi bi-info-circle"></i> No settings saved on this browser.</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, useTemplateRef, reactive , onMounted, watch } from "vue";
+import { getRandomSeed, createBuffer, createPipeline } from "./utils.ts";
+import { Tooltip } from "bootstrap";
+import computeShader from "./computeShader.wgsl?raw" with { type: "text" };
+import compositingShader from "./compositingShader.wgsl?raw" with { type: "text" };
+
+const imageChannelNames = ["R", "G", "B", "A"];
+const channelTypes = ["Generator 0 (Value)", "Generator 0 (Value)", "Generator 0 (Value)", "Generator 0 (Value)", "D0_X", "D0_Y"];
+const channelsData = [];
+const generating = ref(true);
+const canvas = useTemplateRef("canvas");
+const initialSeed = getRandomSeed();
+const defaultSettings = {
+  name: "Noise",
+  resolution: 256,
+  dimension: "3d",
+  layout: "auto",
+  activeGenerator: 0,
+  generators: [
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
+  ],
+  activeChannel: 0,
+  channels: ["R", "G", "B", "A"],
+  normalScale: 1.0,
+}
+const settings = reactive(structuredClone(defaultSettings));
+const settingsCollection = reactive(JSON.parse(localStorage.getItem("settingsCollection") || "{}"));
+
+let device: any;
+let context: any;
+let format: any;
+let computeModule: any;
+let compositingModule: any;
+let uniformBuffer: any;
+let uniformData: any;
+let noiseBuffer: any;
+let computePipeline: any;
+let compositingPipeline: any;
+
+const is3d = computed(() => settings.dimension === "3d" && settings.resolution < 512)
+
+const activeGenerator = computed(() => settings.generators[settings.activeGenerator])
+
+const activeChannel = computed(() => settings.channels[settings.activeChannels])
+
+const canvasWidth = computed(() => settings.resolution * xTiles.value)
+
+const canvasHeight = computed(() => settings.resolution * yTiles.value)
+
+const xTiles = computed(() => {
+  const sqr = Math.sqrt(settings.resolution);
+  if (!is3d.value) return 1;
+  if (settings.layout === "auto") return Number.isInteger(sqr) ? Math.ceil(sqr) : 1;
+  if (settings.layout === "square") return Math.ceil(sqr);
+  if (settings.layout === "horizontal") return settings.resolution;
+  if (settings.layout === "vertical") return 1;
+  return 1;
+})
+
+const yTiles = computed(() => {
+  const sqr = Math.sqrt(settings.resolution);
+  if (!is3d.value) return 1;
+  if (settings.layout === "auto") return Number.isInteger(sqr) ? Math.ceil(sqr) : settings.resolution;
+  if (settings.layout === "square") return Math.ceil(sqr);
+  if (settings.layout === "horizontal") return 1;
+  if (settings.layout === "vertical") return settings.resolution;
+  return 1;
+})
+
+watch(() => settings.dimension, (newValue, oldValue) => {
+  setupRenderPipeline();
+})
+
+watch(() => settings.resolution, (newValue, oldValue) => {
+  setupRenderPipeline();
+})
+
+watch(settings, (newValue, oldValue) => {
+  generateNoise(true);
+})
+
+onMounted(async () => {
+  [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels
+  const adapter = await navigator.gpu.requestAdapter();
+  device = await adapter.requestDevice({ maxBufferSize: 2147483648 });
+  context = canvas.value?.getContext("webgpu");
+  format = navigator.gpu.getPreferredCanvasFormat();
+  computeModule = device.createShaderModule({ code: computeShader }),
+  compositingModule = device.createShaderModule({ code: compositingShader });
+  context.configure({ device, format, alphaMode: "opaque" });
+  setupRenderPipeline();
+  await generateNoise(true);
+})
+
+function setupRenderPipeline() {
+  let width = settings.resolution;
+  let height = settings.resolution;
+  let depth = settings.resolution;
+
+  canvas.value.width = canvasWidth.value;
+  canvas.value.height = canvasHeight.value;
+
+  uniformData = new Float32Array([
+    width, height, depth, xTiles.value, yTiles.value, settings.seamless ? 1 : 0, activeGenerator.value.seed, activeGenerator.value.scale
+  ]);
+
+  uniformBuffer = device.createBuffer({
+    size: uniformData.byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+
+  noiseBuffer = device.createBuffer({
+    size: width * height * depth * 4,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
+
+  const bindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' }, },
+      { binding: 1, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: 'storage' }, },
+    ],
+  });
+  const pipelineLayout = device.createPipelineLayout({
+    bindGroupLayouts: [bindGroupLayout]
+  });
+
+  computePipeline = device.createComputePipeline({
+    label: 'ComputePipeline',
+    layout: pipelineLayout,
+    compute: {
+      module: computeModule,
+      entryPoint: 'main'
+    }
+  });
+
+  compositingPipeline = device.createRenderPipeline({
+    label: 'CompositingPipeline',
+    layout: pipelineLayout,
+    vertex: {
+      module: compositingModule,
+      entryPoint: "vertex"
+    },
+    fragment: {
+      module: compositingModule,
+      entryPoint: "fragment",
+      targets: [{ format }]
+    },
+    primitive: {
+      topology: 'triangle-list'
+    }
+  });
+}
+
+
+async function generateNoise(allChannels: boolean) {
+  console.log("generating noise")
+  generating.value = true;
+  const width = settings.resolution;
+  const height = settings.resolution;
+  const depth = is3d.value ? settings.resolution : 1;
+  const dispatchX = Math.ceil(width  / 4);
+  const dispatchY = Math.ceil(height / 4);
+  const dispatchZ = Math.ceil(depth  / 4);
+
+  const canvasTexture = context.getCurrentTexture();
+
+  const computeBindGroup = device.createBindGroup({
+    layout: computePipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniformBuffer } },
+      { binding: 1, resource: { buffer: noiseBuffer } }
+    ]
+  });
+
+  const compositingBindGroup = device.createBindGroup({
+    layout: compositingPipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniformBuffer } },
+      { binding: 1, resource: { buffer: noiseBuffer } }
+    ]
+  });
+
+  // update uniforms
+  uniformData[0] = settings.resolution;
+  uniformData[1] = settings.resolution;
+  uniformData[2] = settings.resolution;
+  uniformData[3] = xTiles.value;
+  uniformData[4] = yTiles.value;
+  uniformData[6] = activeGenerator.value.seed;
+
+  const commandEncoder = device.createCommandEncoder();
+
+  const computePass = commandEncoder.beginComputePass();
+  computePass.setPipeline(computePipeline);
+  computePass.setBindGroup(0, computeBindGroup);
+  computePass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
+  computePass.end();
+  
+  const compositingPass = commandEncoder.beginRenderPass({
+    colorAttachments: [{
+      view: context.getCurrentTexture().createView(),
+      clearValue: { r: 0, g: 0, b: 0, a: 1 },
+      loadOp: 'load',
+      storeOp: 'store',
+    }]
+  });
+  compositingPass.setPipeline(compositingPipeline);
+  compositingPass.setBindGroup(0, compositingBindGroup);
+  compositingPass.draw(6);
+  compositingPass.end();
+
+  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+  device.queue.submit([commandEncoder.finish()]);
+
+  // for (let c = 0; c < 4; c++) {
+  //   if (c != settings.activeGenerator && allChannels == false) continue;
+  //   const channelSettings = settings.channels[c];
+  //   const seed = channelSettings.seed;
+  //   const seamless = channelSettings.seamless;
+  //   const scale = 1.0;
+
+  //   channelsData[c] = await computeNoise(testComputeShader, seed, width, height, depth, seamless, scale);
+
+  //   // if (channelSettings.type === "none")
+  //   //   channelsData[c] = generateNone(seed, width, height, depth, seamless);
+  //   // if (channelSettings.type === "random")
+  //   //   channelsData[c] = generateRandomNoise(seed, width, height, depth, seamless);
+  //   // if (channelSettings.type === "perlin")
+  //   //   channelsData[c] = generateSimplexNoiseGPU(seed, width, height, depth, seamless, channelSettings.perlinSize * settings.resolution, channelSettings.perlinOctaves, channelSettings.perlinLacunarity);
+  //   // if (channelSettings.type === "voronoi")
+  //   //   channelsData[c] = generateVoronoiNoise(seed, width, height, depth, seamless, channelSettings.voronoiCellSize * settings.resolution, channelSettings.voronoiFalloff);
+  //   // if (channelSettings.type === "blueNoise")
+  //   //   channelsData[c] = generateBlueNoise(seed, width, height, depth, seamless, channelSettings.blueNoiseRadius);
+  // }
+
+  //drawCanvas();
+
+  generating.value = false;
+}
+
+
+// async function computeNoise(shader: string, seed: number, width: number, height: number, depth: number, seamless: boolean, scale: number) {
+//   const totalSize = width * height * depth;
+
+//   const settingsData = new Float32Array([
+//     width, height, depth, xTiles.value, yTiles.value, seamless ? 1 : 0, seed, scale
+//   ]);
+//   const settingsBuffer = createBuffer(device, settingsData, GPUBufferUsage.UNIFORM);
+
+//   const noiseBuffer = device.createBuffer({
+//     size: totalSize * 4,
+//     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+//   });
+
+//   const outputBuffer = device.createBuffer({
+//     size: width * xTiles.value * height * yTiles.value * 4,
+//     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+//   });
+
+//   const resultBuffer = device.createBuffer({
+//     size: width * xTiles.value * height * yTiles.value * 4,
+//     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+//   });
+
+//   const shaderModule = device.createShaderModule({ code: shader });
+//   const drawShaderModule = device.createShaderModule({ code: drawComputeShader });
+
+//   const drawBindGroupLayout = device.createBindGroupLayout({
+//     entries: [
+//       { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
+//       { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
+//       { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
+//     ]
+//   });
+
+//   const drawPipelineLayout = device.createPipelineLayout({
+//     bindGroupLayouts: [drawBindGroupLayout]
+//   });
+
+//   const pipeline = device.createComputePipeline({
+//     label: 'NoiseComputePipeline',
+//     layout: drawPipelineLayout,
+//     compute: {
+//       module: shaderModule,
+//       entryPoint: 'main'
+//     }
+//   });
+
+//   const drawPipeline = device.createComputePipeline({
+//     label: 'DrawComputePipeline',
+//     layout: drawPipelineLayout,
+//     compute: {
+//       module: drawShaderModule,
+//       entryPoint: 'main',
+//     },
+//   });
+
+//   const bindGroup = device.createBindGroup({
+//     layout: drawPipeline.getBindGroupLayout(0),
+//     entries: [
+//       { binding: 0, resource: { buffer: settingsBuffer } },
+//       { binding: 1, resource: { buffer: noiseBuffer } },
+//       { binding: 2, resource: { buffer: outputBuffer } }
+//     ]
+//   });
+
+//   const dispatchX = Math.ceil(width / 8);
+//   const dispatchY = Math.ceil(height / 8);
+//   const dispatchZ = Math.ceil(depth / 2);
+
+//   const encoder = device.createCommandEncoder();
+
+//   const pass = encoder.beginComputePass();
+//   // compute the noise
+//   pass.setPipeline(pipeline);
+//   pass.setBindGroup(0, bindGroup);
+//   pass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
+//   // draw (derive / layout)
+//   pass.setPipeline(drawPipeline);
+//   pass.setBindGroup(0, bindGroup);
+//   pass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
+//   pass.end();
+
+//   encoder.copyBufferToBuffer(outputBuffer, 0, resultBuffer, 0, totalSize * 4);
+//   device.queue.submit([encoder.finish()]);
+
+//   await resultBuffer.mapAsync(GPUMapMode.READ);
+//   const result = new Float32Array(resultBuffer.getMappedRange().slice());
+//   resultBuffer.unmap();
+//   return result;
+// }
+
+
+// function drawCanvas() {
+//   const tileResolutionX = settings.resolution;
+//   const tileResolutionY = settings.resolution;
+//   const depthResolution = is3d.value ? settings.resolution : 1;
+//   const imgData = ctx.createImageData(tileResolutionX, tileResolutionY);
+
+//   for (let y = 0; y < settings.resolution * yTiles.value; y++) {
+//     for (let x = 0; x < settings.resolution * xTiles.value; x++) {
+//       const index = x + settings.resolution * xTiles.value * y;
+//       imgData.data[index * 4 + 0] = channelsData[0][index] * 255;
+//     }
+//   }
+//   // for (let z = 0; z < depthResolution; z++) {
+//   //   const posX = (z % xTiles.value) * tileResolutionX;
+//   //   const posY = Math.floor((z / xTiles.value)) * tileResolutionY;
+//   //   for (let y = 0; y < tileResolutionY; y++) {
+//   //     for (let x = 0; x < tileResolutionX; x++) {
+//   //       const dataIndex = x + tileResolutionX * y;
+//   //       const noiseIndex = x + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
+//   //       const noiseIndexL = ((x + 1) % tileResolutionX) + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
+//   //       const noiseIndexT = x + tileResolutionX * ((y + 1) % tileResolutionY) + tileResolutionX * tileResolutionY * z;
+
+//   //       if (settings.outputType === "default") {
+//   //         if (settings.outputR) imgData.data[dataIndex * 4 + 0] = channelsData[0][noiseIndex] * 255;
+//   //         if (settings.outputG) imgData.data[dataIndex * 4 + 1] = channelsData[1][noiseIndex] * 255;
+//   //         if (settings.outputB) imgData.data[dataIndex * 4 + 2] = channelsData[2][noiseIndex] * 255;
+//   //         if (settings.outputA) imgData.data[dataIndex * 4 + 3] = channelsData[3][noiseIndex] * 255;
+//   //         else imgData.data[dataIndex * 4 + 3] = 255;
+//   //       } else {
+//   //         let channelId = 0;
+//   //         if (settings.outputType === "normalR") channelId = 0;
+//   //         if (settings.outputType === "normalG") channelId = 1;
+//   //         if (settings.outputType === "normalB") channelId = 2;
+//   //         if (settings.outputType === "normalA") channelId = 3;
+//   //         const dx = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexL]) * settings.resolution * settings.normalScale * 0.1;
+//   //         const dy = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexT]) * settings.resolution * settings.normalScale * 0.1;
+
+//   //         // normalize
+//   //         const length = Math.sqrt(dx * dx + dy * dy + 1.0);
+//   //         imgData.data[dataIndex * 4 + 0] = ((-dx / length * 0.5) + 0.5) * 255;
+//   //         imgData.data[dataIndex * 4 + 1] = ((-dy / length * 0.5) + 0.5) * 255;
+//   //         imgData.data[dataIndex * 4 + 2] = 255;
+//   //         imgData.data[dataIndex * 4 + 3] = 255;
+//   //       }
+//   //     }
+//   //   }
+//   //}
+//   ctx.putImageData(imgData, 0, 0);
+// }
+
+
+function exportImage() {
+  const link = document.createElement("a");
+  link.download = `${settings.name}.png`;
+  link.href = canvas.value?.toDataURL("image/png") || "";
+  link.click();
+}
+
+async function copyImageToClipboard() {
+  try {
+    const blob = await new Promise(resolve => canvas.value?.toBlob(resolve));
+    const item = new ClipboardItem({ 'image/png': blob as Blob });
+    await navigator.clipboard.write([item]);
+    alert("Image copied to clipboard!");
+  } catch (err) {
+    alert("Failed to copy: " + err);
+  }
+}
+
+async function loadSetting(setting: any) {
+  // resizeCanvas();
+  // await generateNoise(true);
+  // await drawCanvas();
+  // refreshUi();
+  // loadModal.hide();
+}
+
+function removeSetting(setting: any) {
+  if (confirm(`Really delete setting ${setting.name}`)) {
+    delete settingsCollection[setting.name];
+    localStorage.setItem("settingsCollection", JSON.stringify(settingsCollection));
+  }
+}
+
+function saveSettings() {
+  try {
+    const settingsCollection = JSON.parse(localStorage.getItem("settingsCollection") || "{}");
+    settingsCollection[settings.name] = settings
+    localStorage.setItem("settingsCollection", JSON.stringify(settingsCollection));
+  } catch(e) {
+    fixSettingsCollection();
+  }
+}
+
+function fixSettingsCollection() {
+  alert("Your settings collection was corrupted. They were cleared to fix the issue.")
+  localStorage.setItem("settingsCollection", "{}");
+}
+
+</script>
+
+<style lang="scss">
+@use "../node_modules/bootstrap/dist/css/bootstrap.min.css";
+@use "../node_modules/bootstrap-icons/font/bootstrap-icons.css";
+@use './style.css';
+</style>
