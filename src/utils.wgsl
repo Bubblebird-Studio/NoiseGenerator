@@ -1,3 +1,7 @@
+alias float = f32;
+alias float3 = vec3<f32>;
+alias float4 = vec4<f32>;
+
 const NOISE_TYPE_RANDOM: u32 = 0;
 const NOISE_TYPE_PERLIN: u32 = 1;
 const NOISE_TYPE_VORONOI: u32 = 2;
@@ -7,6 +11,9 @@ const VALUE_TYPE_NORMALX: u32 = 1;
 const VALUE_TYPE_NORMALY: u32 = 2;
 const VALUE_TYPE_0: u32 = 3;
 const VALUE_TYPE_1: u32 = 4;
+
+const F3: f32 = 0.3333333;   // 1/3
+const G3: f32 = 0.1666667;   // 1/6
 
 struct Settings {
   generatorIndex: f32,
@@ -48,6 +55,11 @@ fn frac(x: f32) -> f32 {
 }
 
 
+fn frac4(x: vec4<f32>) -> vec4<f32> {
+  return x - floor(x);
+}
+
+
 fn Hash_vec3_i32(p: vec3<i32>) -> u32 {
   var h: u32 = 2166136261u;
   h = (h ^ u32(p.x)) * 16777619u;
@@ -55,6 +67,7 @@ fn Hash_vec3_i32(p: vec3<i32>) -> u32 {
   h = (h ^ u32(p.z)) * 16777619u;
   return h;
 }
+
 
 fn Hash_u32(x: u32) -> u32 {
     var h = x;
@@ -66,12 +79,14 @@ fn Hash_u32(x: u32) -> u32 {
     return h;
 }
 
+
 fn RandVector(s: u32) -> vec3<f32> {
   let x = frac(sin(f32(s + 1)) * 43758.5453);
   let y = frac(sin(f32(s + 2)) * 12345.6789);
   let z = frac(sin(f32(s + 3)) * 98765.4321);
   return vec3<f32>(x, y, z);
 }
+
 
 fn Rand01(hash: u32) -> f32 {
     // Mask to keep only the positive 31 bits
@@ -81,15 +96,18 @@ fn Rand01(hash: u32) -> f32 {
     return f32(masked) / f32(0x7FFFFFFF);
 }
 
+
 fn modulo_i32(v: vec3<i32>, m: vec3<i32>) -> vec3<i32> {
   return ((v % m) + m) % m;
 }
+
 
 fn toroidal_distance(a: vec3<f32>, b: vec3<f32>, tileSize: vec3<f32>) -> f32 {
   let delta = abs(a - b);
   let wrapped = min(delta, tileSize - delta);
   return length(wrapped);
 }
+
 
 fn alphaBlend(fg: vec4<f32>, bg: vec4<f32>) -> vec4<f32> {
     let outAlpha = fg.a + bg.a * (1.0 - fg.a);
@@ -99,4 +117,29 @@ fn alphaBlend(fg: vec4<f32>, bg: vec4<f32>) -> vec4<f32> {
 
     let outRgb = (fg.rgb * fg.a + bg.rgb * bg.a * (1.0 - fg.a)) / outAlpha;
     return vec4<f32>(outRgb, outAlpha);
+}
+
+
+fn mod289(x: float3) -> float3 {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+
+fn mod289_4(x: float4) -> float4 {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+
+fn permute(x: float4) -> float4 {
+    return mod289_4(((x * 34.0) + 1.0) * x);
+}
+
+
+fn taylorInvSqrt(r: float4) -> float4 {
+    return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+
+fn fmod(x: vec3<f32>, y: vec3<f32>) -> vec3<f32> {
+  return x - y * floor(x / y);
 }

@@ -34,6 +34,7 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
   let xTiles = u32(settings.xTiles);
   let yTiles = u32(settings.yTiles);
   let noiseType = u32(settings.noiseType);
+  let perlinSize = f32(settings.perlinSize);
   let perlinOctaves = u32(settings.perlinOctaves);
   let perlinLacunarity = f32(settings.perlinLacunarity);
   let voronoiCellSize = f32(settings.voronoiCellSize);
@@ -63,7 +64,59 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
   }
 
   if (noiseType == NOISE_TYPE_PERLIN) {
-    output = 0;
+    var v = vec3<f32>(f32(x) / f32(resolutionX), f32(y) / f32(resolutionY), f32(z) / f32(resolutionZ)) * perlinSize;
+
+    // Wrap the input coordinates to enforce tiling
+    //v = fmod(v, vec3<f32>(perlinSize));
+
+    // Skew the input space to find simplex cell
+    let s: f32 = (v.x + v.y + v.z) * F3;
+    let i: vec3<f32> = floor(v + s);
+    let t: f32 = (i.x + i.y + i.z) * G3;
+    let X0: vec3<f32> = i - t;
+    let x0: vec3<f32> = v - X0;
+
+    // Determine simplex corner ordering
+    let g: vec3<f32> = step(x0.yzx, x0.xyz);
+    let l: vec3<f32> = 1.0 - g;
+    let i1: vec3<f32> = min(g.xyz, l.zxy);
+    let i2: vec3<f32> = max(g.xyz, l.zxy);
+
+    // Offsets for corners
+    let x1: vec3<f32> = x0 - i1 + G3;
+    let x2: vec3<f32> = x0 - i2 + 2.0 * G3;
+    let x3: vec3<f32> = x0 - 1.0 + 3.0 * G3;
+
+    // Calculate hashed gradients
+    let ii: vec4<f32> = mod289_4(float4(i.x, i.x + i1.x, i.x + i2.x, i.x + 1.0));
+    let jj: vec4<f32> = mod289_4(float4(i.y, i.y + i1.y, i.y + i2.y, i.y + 1.0));
+    let kk: vec4<f32> = mod289_4(float4(i.z, i.z + i1.z, i.z + i2.z, i.z + 1.0));
+
+    let perm: vec4<f32> = permute(permute(permute(ii) + jj) + kk);
+    var gx: vec4<f32> = frac4(perm * (1.0 / 41.0)) * 2.0 - 1.0;
+    let gy: vec4<f32> = abs(gx) - 0.5;
+    let tx: vec4<f32> = floor(gx + 0.5);
+    gx = gx - tx;
+
+    var g0 = vec3<f32>(gx.x, gy.x, 1.0 - abs(gx.x) - abs(gy.x));
+    var g1 = vec3<f32>(gx.y, gy.y, 1.0 - abs(gx.y) - abs(gy.y));
+    var g2 = vec3<f32>(gx.z, gy.z, 1.0 - abs(gx.z) - abs(gy.z));
+    var g3 = vec3<f32>(gx.w, gy.w, 1.0 - abs(gx.w) - abs(gy.w));
+
+    // Normalize gradients
+    let norm: vec4<f32> = taylorInvSqrt(vec4<f32>(dot(g0, g0), dot(g1, g1), dot(g2, g2), dot(g3, g3)));
+    g0 *= norm.x;
+    g1 *= norm.y;
+    g2 *= norm.z;
+    g3 *= norm.w;
+
+    // Calculate noise contributions
+    let t0: vec4<f32> = 0.6 - vec4<f32>(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3));
+    var n: vec4<f32> = max(t0, vec4<f32>(0.0));
+    n = n * n * n * n;
+    let dotProd = vec4<f32>(dot(g0,x0), dot(g1,x1), dot(g2,x2), dot(g3,x3));
+
+    output = perlinSize * dot(n, dotProd) * 0.5 + 0.5;
   }
 
   if (noiseType == NOISE_TYPE_VORONOI) {
