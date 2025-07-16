@@ -51,7 +51,7 @@
         <div class="input-group mb-3">
           <label class="input-group-text" for="resolution">Resolution</label>
           <div class="input-group-text">
-            <input type="range" class="form-range" min="3" max="13" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
+            <input type="range" class="form-range" min="3" max="12" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
           </div>
           <label class="input-group-text" for="resolution">{{ settings.resolution }}</label>
         </div>
@@ -141,7 +141,7 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiCellSize">Cell size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize">
+                <input type="range" class="form-range" min="1.0" max="100.0" step="0.1" v-model="activeGenerator.voronoiCellSize">
               </div>
               <label class="input-group-text" for="voronoiCellSize">{{ activeGenerator.voronoiCellSize }}</label>
             </div>
@@ -208,7 +208,7 @@
         <!-- ################  SWIZZLE  ################ -->
         <ul class="nav nav-tabs">
           <li class="nav-item">
-            <a class="nav-link disabled" aria-disabled="true">Channels mapping</a>
+            <a class="nav-link disabled" aria-disabled="true">Swizzle</a>
           </li>
           <li class="nav-item">
             <a class="nav-link channel-nav" :class="{'active': settings.activeChannel == 0}" role="button" data-channel=0 @click="settings.activeChannel = 0">R</a>
@@ -352,7 +352,7 @@ const defaultGeneratorSettings = {
   perlinSize: 0.1,
   perlinOctaves: 1,
   perlinLacunarity: 2.0,
-  voronoiCellSize: 0.1,
+  voronoiCellSize: 10.0,
   voronoiFalloff: 1.0,
   voronoiWeight1: 1.0,
   voronoiWeight2: 0.0,
@@ -444,6 +444,7 @@ onMounted(async () => {
 
 function GetUniformData(generator: number) {
   return new Float32Array([
+    generator,
     settings.resolution,
     settings.resolution,
     is3d.value ? settings.resolution : 1,
@@ -477,9 +478,9 @@ function GetUniformData(generator: number) {
 }
 
 function setupRenderPipeline() {
-  const width = settings.resolution;
-  const height = settings.resolution;
-  const depth = is3d.value ? settings.resolution : 1;
+  const resolutionX = settings.resolution;
+  const resolutionY = settings.resolution;
+  const resolutionZ = is3d.value ? settings.resolution : 1;
 
   canvas.value.width = canvasWidth.value;
   canvas.value.height = canvasHeight.value;
@@ -490,7 +491,7 @@ function setupRenderPipeline() {
   });
 
   noiseBuffer = device.createBuffer({
-    size: width * height * depth * 4,
+    size: resolutionX * resolutionY * resolutionZ * 4 * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
   });
 
@@ -535,12 +536,12 @@ function setupRenderPipeline() {
 async function generateNoise(allChannels: boolean) {
   console.log("generating noise")
   generating.value = true;
-  const width = settings.resolution;
-  const height = settings.resolution;
-  const depth = is3d.value ? settings.resolution : 1;
-  const dispatchX = Math.ceil(width  / 4);
-  const dispatchY = Math.ceil(height / 4);
-  const dispatchZ = Math.ceil(depth  / 4);
+  const resolutionX = settings.resolution;
+  const resolutionY = settings.resolution;
+  const resolutionZ = is3d.value ? settings.resolution : 1;
+  const dispatchX = Math.ceil(resolutionX  / 4);
+  const dispatchY = Math.ceil(resolutionY / 4);
+  const dispatchZ = Math.ceil(resolutionZ  / 4);
 
   const canvasTexture = context.getCurrentTexture();
 
@@ -560,14 +561,19 @@ async function generateNoise(allChannels: boolean) {
     ]
   });
 
-  const commandEncoder = device.createCommandEncoder();
 
-  const computePass = commandEncoder.beginComputePass();
-  computePass.setPipeline(computePipeline);
-  computePass.setBindGroup(0, computeBindGroup);
-  computePass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
-  computePass.end();
-  
+  for (let c = 0; c < 4; c++) {
+    device.queue.writeBuffer(uniformBuffer, 0, GetUniformData(c));
+    const commandEncoder = device.createCommandEncoder();
+    const computePass = commandEncoder.beginComputePass();
+    computePass.setPipeline(computePipeline);
+    computePass.setBindGroup(0, computeBindGroup);
+    computePass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
+    computePass.end();
+    device.queue.submit([commandEncoder.finish()]);
+  }
+
+  const commandEncoder = device.createCommandEncoder();
   const compositingPass = commandEncoder.beginRenderPass({
     colorAttachments: [{
       view: context.getCurrentTexture().createView(),
@@ -581,7 +587,6 @@ async function generateNoise(allChannels: boolean) {
   compositingPass.draw(6);
   compositingPass.end();
 
-  device.queue.writeBuffer(uniformBuffer, 0, GetUniformData(0));
   device.queue.submit([commandEncoder.finish()]);
 
   // for (let c = 0; c < 4; c++) {

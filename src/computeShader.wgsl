@@ -27,9 +27,10 @@ fn insert_sorted(distances: vec4<f32>, value: f32) -> vec4<f32> {
 
 @compute @workgroup_size(4, 4, 4)
 fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
-  let width = u32(settings.width);
-  let height = u32(settings.height);
-  let depth = u32(settings.depth);
+  let generatorIndex = u32(settings.generatorIndex);
+  let resolutionX = u32(settings.resolutionX);
+  let resolutionY = u32(settings.resolutionY);
+  let resolutionZ = u32(settings.resolutionZ);
   let xTiles = u32(settings.xTiles);
   let yTiles = u32(settings.yTiles);
   let noiseType = u32(settings.noiseType);
@@ -44,14 +45,16 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
   let seamless = u32(settings.seamless) != 0u;
   let seed = u32(settings.seed);
 
-  let tileResolutionX = width / xTiles;
-  let tileResolutionY = height / yTiles;
+  //let tileResolutionX = width / xTiles;
+  //let tileResolutionY = height / yTiles;
 
   let x = coord.x;
   let y = coord.y;
   let z = coord.z;
   
-  let index = x + width * y + width * height * z;
+  let resolution = vec3<u32>(resolutionX, resolutionY, resolutionZ);
+  //let resolution = vec3<f32>(f32(resolutionX), f32(resolutionY), f32(resolutionZ));
+  let index = x + resolutionX * y + resolutionX * resolutionY * z;
   var output = 0.0;
 
   //if (x >= settings.width || y >= settings.height || z >= settings.depth) return;
@@ -68,26 +71,34 @@ fn main(@builtin(global_invocation_id) coord: vec3<u32>) {
   }
 
   if (noiseType == NOISE_TYPE_VORONOI) {
-    let position = vec3<f32>(f32(x), f32(y), f32(z)) * voronoiCellSize;
-    let cell = vec3<i32>(position);
-    let weights = vec4<f32>(voronoiWeight1, voronoiWeight2, voronoiWeight3, voronoiWeight4); //vec4<f32>(0.588, -0.76, -1.175, -0.788);
+    let gridResolution = vec3<i32>(floor(max(vec3<f32>(1.0), vec3<f32>(resolution) / voronoiCellSize)));
+    let tileSize = vec3<f32>(gridResolution) * voronoiCellSize;
+
+    let position = vec3<f32>(f32(x), f32(y), f32(z)) / vec3<f32>(resolution) * tileSize;
+    let cell = vec3<i32>(floor(position / voronoiCellSize));
+
+    let weights = vec4<f32>(voronoiWeight1, voronoiWeight2, voronoiWeight3, voronoiWeight4);
     var minDistances = vec4<f32>(999999.0, 999999.0, 999999.0, 999999.0);
 
     for (var dx = -1; dx <= 1; dx++) {
       for (var dy = -1; dy <= 1; dy++) {
         for (var dz = -1; dz <= 1; dz++) {
           let neighbor_cell = cell + vec3<i32>(dx, dy, dz);
-          let feature_point = vec3<f32>(neighbor_cell) + RandVector(Hash_vec3_i32(neighbor_cell) + seed);
+          let wrapped_cell = modulo_i32(neighbor_cell, gridResolution);
+
+          let feature_point = (vec3<f32>(wrapped_cell) + RandVector(Hash_vec3_i32(wrapped_cell) + seed)) * voronoiCellSize;
           let delta = feature_point - position;
-          let dist = length(delta);
+          let deltaWrapped = min(abs(delta), tileSize - abs(delta)); // toroidal distance
+          let dist = length(deltaWrapped) / voronoiCellSize;
+
           minDistances = insert_sorted(minDistances, dist);
         }
       }
     }
 
-    output = pow(dot(minDistances, weights), voronoiFalloff);
+    output = dot(minDistances, weights);
   }
   
 
-  noiseBuffer[index] = output;
+  noiseBuffer[index * 4 + generatorIndex] = output;
 }

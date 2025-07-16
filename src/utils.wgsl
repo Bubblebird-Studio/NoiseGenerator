@@ -9,9 +9,10 @@ const VALUE_TYPE_0: u32 = 3;
 const VALUE_TYPE_1: u32 = 4;
 
 struct Settings {
-  width: f32,
-  height: f32,
-  depth: f32,
+  generatorIndex: f32,
+  resolutionX: f32,
+  resolutionY: f32,
+  resolutionZ: f32,
   xTiles: f32,
   yTiles: f32,
   noiseType: f32,
@@ -78,4 +79,14 @@ fn Rand01(hash: u32) -> f32 {
     let masked: u32 = (mixed & 0x7FFFFFFF);
     // Convert to float and normalize to [0.0, 1.0)
     return f32(masked) / f32(0x7FFFFFFF);
+}
+
+fn modulo_i32(v: vec3<i32>, m: vec3<i32>) -> vec3<i32> {
+  return ((v % m) + m) % m;
+}
+
+fn toroidal_distance(a: vec3<f32>, b: vec3<f32>, tileSize: vec3<f32>) -> f32 {
+  let delta = abs(a - b);
+  let wrapped = min(delta, tileSize - delta);
+  return length(wrapped);
 }
