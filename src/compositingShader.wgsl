@@ -1,16 +1,4 @@
 
-
-struct Settings {
-  width: f32,
-  height: f32,
-  depth: f32,
-  xTiles: f32,
-  yTiles: f32,
-  seamless: f32,
-  seed: f32,
-  scale: f32,
-};
-
 @group(0) @binding(0) var<uniform> settings: Settings;
 @group(0) @binding(1) var<storage, read_write> noiseBuffer: array<f32>;
 

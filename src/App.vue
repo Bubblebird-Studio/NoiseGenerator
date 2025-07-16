@@ -18,7 +18,11 @@
           <canvas ref="canvas"></canvas>
         </div>
 
-        <p class="text-info" id="imageInfos"></p>
+        <p class="text-info">
+          <span class="m-3">{{ settings.name }}.png</span>
+          <span class="m-3">{{ canvasWidth }} x {{ canvasHeight }} pixels</span>
+          <span class="m-3" v-if="is3d">{{ xTiles }} x {{ yTiles }} tiles</span>
+        </p>
 
         <div class="btn-group" role="group">
           <button class="btn btn-primary mt-3" type="button" @click="exportImage()"><i class="bi bi-download"></i> Export PNG</button>
@@ -40,14 +44,14 @@
       </div>
 
       <div class="col">
-        <div class="input-group mb-3">
+        <!-- <div class="input-group mb-3">
           <h3>{{ settings.name }}</h3>
-        </div>
+        </div> -->
 
         <div class="input-group mb-3">
           <label class="input-group-text" for="resolution">Resolution</label>
           <div class="input-group-text">
-            <input type="range" class="form-range" min="3" max="10" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
+            <input type="range" class="form-range" min="3" max="13" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
           </div>
           <label class="input-group-text" for="resolution">{{ settings.resolution }}</label>
         </div>
@@ -99,22 +103,19 @@
           <div class="input-group mb-3">
             <label class="input-group-text" for="type">Type</label>
             <select class="form-select" v-model="activeGenerator.type">
-              <option value="random">Random</option>
-              <option value="perlin">Perlin</option>
-              <option value="voronoi">Voronoi</option>
-              <option value="none">None</option>
+              <option v-for="(noiseType, i) in noiseTypes" :value="i">{{ noiseType }}</option>
             </select>
           </div>
 
-          <div v-if="activeGenerator.type == 'perlin'" class="settings m-3">
-            <div class="input-group mb-3">
-              <label class="input-group-text" for="perlinSize">Scale</label>
+          <div v-if="activeGenerator.type == noiseTypes.indexOf('Perlin')" class="settings m-3">
+            <div class="input-group mb-1">
+              <label class="input-group-text" for="perlinSize">Size</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="0.01" max="0.4" step="0.01" v-model="activeGenerator.perlinSize">
               </div>
               <label class="input-group-text" for="perlinSize">{{ activeGenerator.perlinSize }}</label>
             </div>
-            <div class="input-group mb-3">
+            <div class="input-group mb-1">
               <label class="input-group-text" for="perlinOctaves">Octaves</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="1" max="10" step="1" v-model="activeGenerator.perlinOctaves">
@@ -124,7 +125,7 @@
                 <i class="bi bi-question"></i>
               </span>
             </div>
-            <div class="input-group mb-3">
+            <div class="input-group mb-1">
               <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.channels[0].perlinLacunarity">
@@ -136,16 +137,43 @@
             </div>
           </div>
 
-          <div v-if="activeGenerator.type == 'voronoi'" class="settings m-3">
-            <div class="input-group mb-3">
+          <div v-if="activeGenerator.type == noiseTypes.indexOf('Voronoi')" class="settings m-3">
+            <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiCellSize">Cell size</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize">
               </div>
               <label class="input-group-text" for="voronoiCellSize">{{ activeGenerator.voronoiCellSize }}</label>
             </div>
-
-            <div class="input-group mb-3">
+            <div class="input-group mb-1">
+              <label class="input-group-text" for="voronoiWeight1">Weight feature 1</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight1">
+              </div>
+              <label class="input-group-text" for="voronoiWeight1">{{ activeGenerator.voronoiWeight1 }}</label>
+            </div>
+            <div class="input-group mb-1">
+              <label class="input-group-text" for="voronoiWeight2">Weight feature 2</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight2">
+              </div>
+              <label class="input-group-text" for="voronoiWeight2">{{ activeGenerator.voronoiWeight2 }}</label>
+            </div>
+            <div class="input-group mb-1">
+              <label class="input-group-text" for="voronoiWeight3">Weight feature 3</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight3">
+              </div>
+              <label class="input-group-text" for="voronoiWeight3">{{ activeGenerator.voronoiWeight3 }}</label>
+            </div>
+            <div class="input-group mb-1">
+              <label class="input-group-text" for="voronoiWeight4">Weight feature 4</label>
+              <div class="input-group-text">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight4">
+              </div>
+              <label class="input-group-text" for="voronoiWeight4">{{ activeGenerator.voronoiWeight4 }}</label>
+            </div>
+            <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiFalloff">Falloff</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.channels[0].voronoiFalloff">
@@ -157,20 +185,10 @@
             </div>
           </div>
 
-          <div v-if="activeGenerator.type == 'bluenoise'" class="settings m-3">
-            <div class="input-group mb-3">
-              <label class="input-group-text" for="blueNoiseRadius">Radius</label>
-              <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="2" step="0.01" v-model="activeGenerator.blueNoiseRadius">
-              </div>
-              <label class="input-group-text" for="blueNoiseRadius">{{ activeGenerator.blueNoiseRadius }}</label>
-            </div>
-          </div>
-
           <div class="input-group mb-3">
             <label class="input-group-text" for="seamless">Seamless</label>
             <div class="input-group-text">
-              <input class="form-check-input mt-0" type="checkbox" v-model="activeGenerator.seamless">
+              <input class="form-check-input mt-0" type="checkbox" id="seamless" v-model="activeGenerator.seamless">
             </div>
             <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Makes the image tileable.">
               <i class="bi bi-question"></i>
@@ -179,7 +197,7 @@
 
           <div class="input-group">
             <label class="input-group-text" for="seed">Seed</label>
-            <input type="number" class="form-control" v-model="activeGenerator.seed">
+            <input type="number" class="form-control" v-model="activeGenerator.seed" id="seed">
             <button class="btn btn-outline-secondary" type="button" @click="activeGenerator.seed = getRandomSeed()"><i class="bi bi-arrow-clockwise"></i></button>
             <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Defines the starting point for random number generation, producing different noise patterns.">
               <i class="bi bi-question"></i>
@@ -208,11 +226,31 @@
 
         <div class="col border-start border-end border-bottom p-3 mb-3">
           <div class="input-group mb-3">
-            <label class="input-group-text" for="channel">Source</label>
-            <select class="form-select" v-model="activeChannel" id="channel">
-              <option v-for="(channelType, i) in channelTypes" :value="i">{{ channelType }}</option>
+            <label class="input-group-text" for="sourceGenerator">Source generator</label>
+            <select class="form-select" v-model="activeChannel.generator" id="sourceGenerator">
+              <option v-for="(n, i) in 4" :value="i">{{ i }}</option>
             </select>
             <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose the source for this channel of the image">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="sourceType">Value type</label>
+            <select class="form-select" v-model="activeChannel.type" id="sourceType">
+              <option v-for="(sourceType, i) in sourceTypes" :value="i">{{ sourceType }}</option>
+            </select>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose the type of value to use for this channel">
+              <i class="bi bi-question"></i>
+            </span>
+          </div>
+
+          <div class="input-group mb-3">
+            <label class="input-group-text" for="invert">Invert</label>
+            <div class="input-group-text">
+              <input class="form-check-input mt-0" type="checkbox" id="invert" v-model="activeChannel.invert">
+            </div>
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Inverts the range of the values (1.0 - x).">
               <i class="bi bi-question"></i>
             </span>
           </div>
@@ -286,33 +324,9 @@
 import { ref, computed, useTemplateRef, reactive , onMounted, watch } from "vue";
 import { getRandomSeed, createBuffer, createPipeline } from "./utils.ts";
 import { Tooltip } from "bootstrap";
+import utilsShader from "./utils.wgsl?raw" with { type: "text" };
 import computeShader from "./computeShader.wgsl?raw" with { type: "text" };
 import compositingShader from "./compositingShader.wgsl?raw" with { type: "text" };
-
-const imageChannelNames = ["R", "G", "B", "A"];
-const channelTypes = ["Generator 0 (Value)", "Generator 0 (Value)", "Generator 0 (Value)", "Generator 0 (Value)", "D0_X", "D0_Y"];
-const channelsData = [];
-const generating = ref(true);
-const canvas = useTemplateRef("canvas");
-const initialSeed = getRandomSeed();
-const defaultSettings = {
-  name: "Noise",
-  resolution: 256,
-  dimension: "3d",
-  layout: "auto",
-  activeGenerator: 0,
-  generators: [
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
-    { type: "random", seamless: true, seed: initialSeed, perlinSize: 0.1, perlinOctaves: 1, perlinLacunarity: 2.0, voronoiCellSize: 0.1, voronoiFalloff: 1.0, blueNoiseRadius: 1.5 },
-  ],
-  activeChannel: 0,
-  channels: ["R", "G", "B", "A"],
-  normalScale: 1.0,
-}
-const settings = reactive(structuredClone(defaultSettings));
-const settingsCollection = reactive(JSON.parse(localStorage.getItem("settingsCollection") || "{}"));
 
 let device: any;
 let context: any;
@@ -320,19 +334,57 @@ let format: any;
 let computeModule: any;
 let compositingModule: any;
 let uniformBuffer: any;
-let uniformData: any;
 let noiseBuffer: any;
 let computePipeline: any;
 let compositingPipeline: any;
 
+const noiseTypes = ["Random", "Perlin", "Voronoi"];
+const sourceTypes = ["Value", "Normal X", "Normal Y", "0", "1"];
+const channelsData = [];
+const generating = ref(true);
+const canvas = useTemplateRef("canvas");
+const initialSeed = getRandomSeed();
+
+const defaultGeneratorSettings = {
+  type: 0,
+  seamless: true,
+  seed: initialSeed,
+  perlinSize: 0.1,
+  perlinOctaves: 1,
+  perlinLacunarity: 2.0,
+  voronoiCellSize: 0.1,
+  voronoiFalloff: 1.0,
+  voronoiWeight1: 1.0,
+  voronoiWeight2: 0.0,
+  voronoiWeight3: 0.0,
+  voronoiWeight4: 0.0,
+  blueNoiseRadius: 1.5
+}
+
+const defaultChannelSettings = {
+  generator: 0,
+  type: 0,
+  invert: false 
+}
+
+const defaultSettings = {
+  name: "Noise",
+  resolution: 256,
+  dimension: "2d",
+  layout: "auto",
+  activeGenerator: 0,
+  generators: [defaultGeneratorSettings, defaultGeneratorSettings, defaultGeneratorSettings, defaultGeneratorSettings],
+  activeChannel: 0,
+  channels: [defaultChannelSettings, defaultChannelSettings, defaultChannelSettings, defaultChannelSettings],
+  normalScale: 1.0,
+}
+
+const settings = reactive(JSON.parse(JSON.stringify(defaultSettings)));
+const settingsCollection = reactive(JSON.parse(localStorage.getItem("settingsCollection") || "{}"));
 const is3d = computed(() => settings.dimension === "3d" && settings.resolution < 512)
-
 const activeGenerator = computed(() => settings.generators[settings.activeGenerator])
-
-const activeChannel = computed(() => settings.channels[settings.activeChannels])
-
+const activeChannel = computed(() => settings.channels[settings.activeChannel])
 const canvasWidth = computed(() => settings.resolution * xTiles.value)
-
 const canvasHeight = computed(() => settings.resolution * yTiles.value)
 
 const xTiles = computed(() => {
@@ -359,6 +411,10 @@ watch(() => settings.dimension, (newValue, oldValue) => {
   setupRenderPipeline();
 })
 
+watch(() => settings.layout, (newValue, oldValue) => {
+  setupRenderPipeline();
+})
+
 watch(() => settings.resolution, (newValue, oldValue) => {
   setupRenderPipeline();
 })
@@ -370,30 +426,66 @@ watch(settings, (newValue, oldValue) => {
 onMounted(async () => {
   [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels
   const adapter = await navigator.gpu.requestAdapter();
-  device = await adapter.requestDevice({ maxBufferSize: 2147483648 });
+  device = await adapter.requestDevice({
+    requiredLimits: {
+      maxBufferSize: 2147483644,
+      maxStorageBufferBindingSize: 2147483644,
+      maxTextureDimension2D: 16384
+    }
+  });
   context = canvas.value?.getContext("webgpu");
   format = navigator.gpu.getPreferredCanvasFormat();
-  computeModule = device.createShaderModule({ code: computeShader }),
-  compositingModule = device.createShaderModule({ code: compositingShader });
+  computeModule = device.createShaderModule({ code: utilsShader + computeShader }),
+  compositingModule = device.createShaderModule({ code: utilsShader + compositingShader });
   context.configure({ device, format, alphaMode: "opaque" });
   setupRenderPipeline();
   await generateNoise(true);
 })
 
+function GetUniformData(generator: number) {
+  return new Float32Array([
+    settings.resolution,
+    settings.resolution,
+    is3d.value ? settings.resolution : 1,
+    xTiles.value,
+    yTiles.value,
+    settings.generators[generator].type,
+    settings.generators[generator].perlinSize,
+    settings.generators[generator].perlinOctaves,
+    settings.generators[generator].perlinLacunarity,
+    settings.generators[generator].voronoiCellSize,
+    settings.generators[generator].voronoiFalloff,
+    settings.generators[generator].voronoiWeight1,
+    settings.generators[generator].voronoiWeight2,
+    settings.generators[generator].voronoiWeight3,
+    settings.generators[generator].voronoiWeight4,
+    settings.generators[generator].seamless ? 1 : 0,
+    settings.generators[generator].seed,
+    settings.channels[0].generator,
+    settings.channels[0].type,
+    settings.channels[0].invert ? 1 : 0,
+    settings.channels[1].generator,
+    settings.channels[1].type,
+    settings.channels[1].invert ? 1 : 0,
+    settings.channels[2].generator,
+    settings.channels[2].type,
+    settings.channels[2].invert ? 1 : 0,
+    settings.channels[3].generator,
+    settings.channels[3].type,
+    settings.channels[3].invert ? 1 : 0,
+  ]);
+}
+
 function setupRenderPipeline() {
-  let width = settings.resolution;
-  let height = settings.resolution;
-  let depth = settings.resolution;
+  const width = settings.resolution;
+  const height = settings.resolution;
+  const depth = is3d.value ? settings.resolution : 1;
 
   canvas.value.width = canvasWidth.value;
   canvas.value.height = canvasHeight.value;
 
-  uniformData = new Float32Array([
-    width, height, depth, xTiles.value, yTiles.value, settings.seamless ? 1 : 0, activeGenerator.value.seed, activeGenerator.value.scale
-  ]);
-
   uniformBuffer = device.createBuffer({
-    size: uniformData.byteLength,
+    size: GetUniformData(0).byteLength,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
@@ -468,14 +560,6 @@ async function generateNoise(allChannels: boolean) {
     ]
   });
 
-  // update uniforms
-  uniformData[0] = settings.resolution;
-  uniformData[1] = settings.resolution;
-  uniformData[2] = settings.resolution;
-  uniformData[3] = xTiles.value;
-  uniformData[4] = yTiles.value;
-  uniformData[6] = activeGenerator.value.seed;
-
   const commandEncoder = device.createCommandEncoder();
 
   const computePass = commandEncoder.beginComputePass();
@@ -497,7 +581,7 @@ async function generateNoise(allChannels: boolean) {
   compositingPass.draw(6);
   compositingPass.end();
 
-  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+  device.queue.writeBuffer(uniformBuffer, 0, GetUniformData(0));
   device.queue.submit([commandEncoder.finish()]);
 
   // for (let c = 0; c < 4; c++) {
