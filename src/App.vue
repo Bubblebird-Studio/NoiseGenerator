@@ -51,14 +51,14 @@
         <div class="input-group mb-3">
           <label class="input-group-text" for="resolution">Resolution</label>
           <div class="input-group-text">
-            <input type="range" class="form-range" min="3" max="12" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
+            <input type="range" class="form-range" min="3" max="12" id="resolution" :value="Math.log2(settings.resolution)" @input="event => settings.resolution = 1 << event.target.value">
           </div>
           <label class="input-group-text" for="resolution">{{ settings.resolution }}</label>
         </div>
 
         <div class="input-group mb-3">
           <label class="input-group-text" for="dimension">Dimension</label>
-          <select class="form-select" v-model="settings.dimension">
+          <select class="form-select" id="dimension" v-model="settings.dimension">
             <option value="2d">2D</option>
             <option value="3d">3D</option>
           </select>
@@ -69,7 +69,7 @@
 
         <div v-if="settings.dimension == '3d'" class="input-group mb-3">
           <label class="input-group-text" for="layout">3D tiles layout</label>
-          <select class="form-select" v-model="settings.layout">
+          <select class="form-select" id="layout" v-model="settings.layout">
             <option value="auto">Auto</option>
             <option value="square">Square</option>
             <option value="horizontal">Horizontal</option>
@@ -102,7 +102,7 @@
         <div class="col border-start border-end border-bottom p-3 mb-3">
           <div class="input-group mb-3">
             <label class="input-group-text" for="type">Type</label>
-            <select class="form-select" v-model="activeGenerator.type">
+            <select class="form-select" id="type" v-model="activeGenerator.type">
               <option v-for="(noiseType, i) in noiseTypes" :value="i">{{ noiseType }}</option>
             </select>
           </div>
@@ -111,14 +111,14 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinSize">Size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="0.4" step="0.01" v-model="activeGenerator.perlinSize">
+                <input type="range" class="form-range" min="0.01" max="0.4" step="0.01" id="perlinSize" v-model="activeGenerator.perlinSize">
               </div>
               <label class="input-group-text" for="perlinSize">{{ activeGenerator.perlinSize }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinOctaves">Octaves</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="1" max="10" step="1" v-model="activeGenerator.perlinOctaves">
+                <input type="range" class="form-range" min="1" max="10" step="1" id="perlinOctaves" v-model="activeGenerator.perlinOctaves">
               </div>
               <label class="input-group-text" for="perlinOctaves">{{ activeGenerator.perlinOctaves }}</label>
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sets the number of noise layers combined to create fractal detail.">
@@ -128,7 +128,7 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.channels[0].perlinLacunarity">
+                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.channels[0].perlinLacunarity">
               </div>
               <label class="input-group-text" for="perlinLacunarity">{{ activeGenerator.perlinLacunarity }}</label>
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
@@ -141,42 +141,42 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiCellSize">Cell size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" id="voronoiCellSize" v-model="activeGenerator.voronoiCellSize">
               </div>
               <label class="input-group-text" for="voronoiCellSize">{{ activeGenerator.voronoiCellSize }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight1">Weight feature 1</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight1">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight1" v-model="activeGenerator.voronoiWeight1">
               </div>
               <label class="input-group-text" for="voronoiWeight1">{{ activeGenerator.voronoiWeight1 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight2">Weight feature 2</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight2">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight2" v-model="activeGenerator.voronoiWeight2">
               </div>
               <label class="input-group-text" for="voronoiWeight2">{{ activeGenerator.voronoiWeight2 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight3">Weight feature 3</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight3">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight3" v-model="activeGenerator.voronoiWeight3">
               </div>
               <label class="input-group-text" for="voronoiWeight3">{{ activeGenerator.voronoiWeight3 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight4">Weight feature 4</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight4">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight4" v-model="activeGenerator.voronoiWeight4">
               </div>
               <label class="input-group-text" for="voronoiWeight4">{{ activeGenerator.voronoiWeight4 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiFalloff">Falloff</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.channels[0].voronoiFalloff">
+                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" id="voronoiFalloff" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.channels[0].voronoiFalloff">
               </div>
               <label class="input-group-text" for="voronoiFalloff">{{ activeGenerator.voronoiFalloff }}</label>
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the curve of the gradient. For a linear gradient, use 1.0.">
@@ -375,7 +375,7 @@ const channelsPresets = {
       { generator: 0, type: 0, invert: false },
       { generator: 0, type: 0, invert: false },
       { generator: 0, type: 0, invert: false },
-      { generator: 3, type: 4, invert: false },
+      { generator: 0, type: 4, invert: false },
     ],
     "Each generator its channel": [
       { generator: 0, type: 0, invert: false },
@@ -490,6 +490,7 @@ onMounted(async () => {
   await generateNoise(true);
 })
 
+
 function GetUniformData(generator: number) {
   return new Float32Array([
     generator,
@@ -524,6 +525,7 @@ function GetUniformData(generator: number) {
     settings.channels[3].invert ? 1 : 0,
   ]);
 }
+
 
 function setupRenderPipeline() {
   const resolutionX = settings.resolution;
@@ -588,16 +590,12 @@ function setupRenderPipeline() {
 
 
 function generateNoise(allChannels: boolean) {
-  console.log("generating noise");
-  //generating.value = true;
   const resolutionX = settings.resolution;
   const resolutionY = settings.resolution;
   const resolutionZ = is3d.value ? settings.resolution : 1;
   const dispatchX = Math.ceil(resolutionX  / 4);
   const dispatchY = Math.ceil(resolutionY / 4);
   const dispatchZ = Math.ceil(resolutionZ  / 4);
-
-  const canvasTexture = context.getCurrentTexture();
 
   const computeBindGroup = device.createBindGroup({
     layout: computePipeline.getBindGroupLayout(0),
@@ -644,156 +642,12 @@ function generateNoise(allChannels: boolean) {
   compositingPass.end();
 
   device.queue.submit([commandEncoder.finish()]);
-
-  //generating.value = false;
 }
+
 
 function onPresetSelection(channelPresetName) {
   settings.channels = structuredClone(channelsPresets[channelPresetName]);
 }
-
-
-// async function computeNoise(shader: string, seed: number, width: number, height: number, depth: number, seamless: boolean, scale: number) {
-//   const totalSize = width * height * depth;
-
-//   const settingsData = new Float32Array([
-//     width, height, depth, xTiles.value, yTiles.value, seamless ? 1 : 0, seed, scale
-//   ]);
-//   const settingsBuffer = createBuffer(device, settingsData, GPUBufferUsage.UNIFORM);
-
-//   const noiseBuffer = device.createBuffer({
-//     size: totalSize * 4,
-//     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-//   });
-
-//   const outputBuffer = device.createBuffer({
-//     size: width * xTiles.value * height * yTiles.value * 4,
-//     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-//   });
-
-//   const resultBuffer = device.createBuffer({
-//     size: width * xTiles.value * height * yTiles.value * 4,
-//     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-//   });
-
-//   const shaderModule = device.createShaderModule({ code: shader });
-//   const drawShaderModule = device.createShaderModule({ code: drawComputeShader });
-
-//   const drawBindGroupLayout = device.createBindGroupLayout({
-//     entries: [
-//       { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-//       { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
-//       { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
-//     ]
-//   });
-
-//   const drawPipelineLayout = device.createPipelineLayout({
-//     bindGroupLayouts: [drawBindGroupLayout]
-//   });
-
-//   const pipeline = device.createComputePipeline({
-//     label: 'NoiseComputePipeline',
-//     layout: drawPipelineLayout,
-//     compute: {
-//       module: shaderModule,
-//       entryPoint: 'main'
-//     }
-//   });
-
-//   const drawPipeline = device.createComputePipeline({
-//     label: 'DrawComputePipeline',
-//     layout: drawPipelineLayout,
-//     compute: {
-//       module: drawShaderModule,
-//       entryPoint: 'main',
-//     },
-//   });
-
-//   const bindGroup = device.createBindGroup({
-//     layout: drawPipeline.getBindGroupLayout(0),
-//     entries: [
-//       { binding: 0, resource: { buffer: settingsBuffer } },
-//       { binding: 1, resource: { buffer: noiseBuffer } },
-//       { binding: 2, resource: { buffer: outputBuffer } }
-//     ]
-//   });
-
-//   const dispatchX = Math.ceil(width / 8);
-//   const dispatchY = Math.ceil(height / 8);
-//   const dispatchZ = Math.ceil(depth / 2);
-
-//   const encoder = device.createCommandEncoder();
-
-//   const pass = encoder.beginComputePass();
-//   // compute the noise
-//   pass.setPipeline(pipeline);
-//   pass.setBindGroup(0, bindGroup);
-//   pass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
-//   // draw (derive / layout)
-//   pass.setPipeline(drawPipeline);
-//   pass.setBindGroup(0, bindGroup);
-//   pass.dispatchWorkgroups(dispatchX, dispatchY, dispatchZ);
-//   pass.end();
-
-//   encoder.copyBufferToBuffer(outputBuffer, 0, resultBuffer, 0, totalSize * 4);
-//   device.queue.submit([encoder.finish()]);
-
-//   await resultBuffer.mapAsync(GPUMapMode.READ);
-//   const result = new Float32Array(resultBuffer.getMappedRange().slice());
-//   resultBuffer.unmap();
-//   return result;
-// }
-
-
-// function drawCanvas() {
-//   const tileResolutionX = settings.resolution;
-//   const tileResolutionY = settings.resolution;
-//   const depthResolution = is3d.value ? settings.resolution : 1;
-//   const imgData = ctx.createImageData(tileResolutionX, tileResolutionY);
-
-//   for (let y = 0; y < settings.resolution * yTiles.value; y++) {
-//     for (let x = 0; x < settings.resolution * xTiles.value; x++) {
-//       const index = x + settings.resolution * xTiles.value * y;
-//       imgData.data[index * 4 + 0] = channelsData[0][index] * 255;
-//     }
-//   }
-//   // for (let z = 0; z < depthResolution; z++) {
-//   //   const posX = (z % xTiles.value) * tileResolutionX;
-//   //   const posY = Math.floor((z / xTiles.value)) * tileResolutionY;
-//   //   for (let y = 0; y < tileResolutionY; y++) {
-//   //     for (let x = 0; x < tileResolutionX; x++) {
-//   //       const dataIndex = x + tileResolutionX * y;
-//   //       const noiseIndex = x + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
-//   //       const noiseIndexL = ((x + 1) % tileResolutionX) + tileResolutionX * y + tileResolutionX * tileResolutionY * z;
-//   //       const noiseIndexT = x + tileResolutionX * ((y + 1) % tileResolutionY) + tileResolutionX * tileResolutionY * z;
-
-//   //       if (settings.outputType === "default") {
-//   //         if (settings.outputR) imgData.data[dataIndex * 4 + 0] = channelsData[0][noiseIndex] * 255;
-//   //         if (settings.outputG) imgData.data[dataIndex * 4 + 1] = channelsData[1][noiseIndex] * 255;
-//   //         if (settings.outputB) imgData.data[dataIndex * 4 + 2] = channelsData[2][noiseIndex] * 255;
-//   //         if (settings.outputA) imgData.data[dataIndex * 4 + 3] = channelsData[3][noiseIndex] * 255;
-//   //         else imgData.data[dataIndex * 4 + 3] = 255;
-//   //       } else {
-//   //         let channelId = 0;
-//   //         if (settings.outputType === "normalR") channelId = 0;
-//   //         if (settings.outputType === "normalG") channelId = 1;
-//   //         if (settings.outputType === "normalB") channelId = 2;
-//   //         if (settings.outputType === "normalA") channelId = 3;
-//   //         const dx = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexL]) * settings.resolution * settings.normalScale * 0.1;
-//   //         const dy = (channelsData[channelId][noiseIndex] - channelsData[channelId][noiseIndexT]) * settings.resolution * settings.normalScale * 0.1;
-
-//   //         // normalize
-//   //         const length = Math.sqrt(dx * dx + dy * dy + 1.0);
-//   //         imgData.data[dataIndex * 4 + 0] = ((-dx / length * 0.5) + 0.5) * 255;
-//   //         imgData.data[dataIndex * 4 + 1] = ((-dy / length * 0.5) + 0.5) * 255;
-//   //         imgData.data[dataIndex * 4 + 2] = 255;
-//   //         imgData.data[dataIndex * 4 + 3] = 255;
-//   //       }
-//   //     }
-//   //   }
-//   //}
-//   ctx.putImageData(imgData, 0, 0);
-// }
 
 
 async function getImageData() {
@@ -823,23 +677,28 @@ async function getImageData() {
 
 async function exportImage() {
   generating.value = true;
-  const imageData = await getImageData();
-  const canvas = document.createElement("canvas");
-  canvas.width = canvasWidth.value;
-  canvas.height = canvasHeight.value;
-  canvas.getContext("2d").putImageData(imageData, 0, 0);
+  try {
+    const imageData = await getImageData();
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth.value;
+    canvas.height = canvasHeight.value;
+    canvas.getContext("2d").putImageData(imageData, 0, 0);
 
-  const link = document.createElement("a");
-  link.download = `${settings.name}.png`;
-  link.href = canvas.toDataURL("image/png") || "";
-  link.click();
+    const link = document.createElement("a");
+    link.download = `${settings.name}.png`;
+    link.href = canvas.toDataURL("image/png") || "";
+    link.click();
 
-  link.remove();
-  canvas.remove();
+    link.remove();
+    canvas.remove();
+  } catch (err) {
+    alert("Failed to export image: " + err);
+  }
   generating.value = false;
 }
 
 async function copyImageToClipboard() {
+  generating.value = true;
   try {
     const imageData = await getImageData();
     const canvas = document.createElement("canvas");
@@ -854,7 +713,9 @@ async function copyImageToClipboard() {
   } catch (err) {
     alert("Failed to copy: " + err);
   }
+  generating.value = false;
 }
+
 
 async function loadSetting(loadedSettings: any) {
   Object.assign(settings, loadedSettings);
@@ -862,12 +723,14 @@ async function loadSetting(loadedSettings: any) {
   //loadModal.hide();
 }
 
+
 function removeSetting(setting: any) {
   if (confirm(`Really delete setting ${setting.name}`)) {
     delete settingsCollection[setting.name];
     localStorage.setItem("settingsCollection", JSON.stringify(settingsCollection));
   }
 }
+
 
 function saveSettings() {
   try {
@@ -879,11 +742,11 @@ function saveSettings() {
   }
 }
 
+
 function fixSettingsCollection() {
   alert("Your settings collection was corrupted. They were cleared to fix the issue.")
   localStorage.setItem("settingsCollection", "{}");
 }
-
 </script>
 
 <style lang="scss">

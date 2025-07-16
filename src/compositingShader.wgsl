@@ -82,5 +82,9 @@ fn fragment(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
   outputBuffer[outputIndex * 4 + 1] = output.g;
   outputBuffer[outputIndex * 4 + 2] = output.b;
   outputBuffer[outputIndex * 4 + 3] = output.a;
-  return output;
+
+  let checkerColor = (floor(f32(fragX) * 0.1) + floor(f32(fragY) * 0.1)) % 2.0 * 0.2 + 0.2;
+  let background = vec4<f32>(checkerColor, checkerColor, checkerColor, checkerColor);
+
+  return alphaBlend(output, background);
 }

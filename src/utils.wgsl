@@ -90,3 +90,13 @@ fn toroidal_distance(a: vec3<f32>, b: vec3<f32>, tileSize: vec3<f32>) -> f32 {
   let wrapped = min(delta, tileSize - delta);
   return length(wrapped);
 }
+
+fn alphaBlend(fg: vec4<f32>, bg: vec4<f32>) -> vec4<f32> {
+    let outAlpha = fg.a + bg.a * (1.0 - fg.a);
+    if (outAlpha == 0.0) {
+        return vec4<f32>(0.0);
+    }
+
+    let outRgb = (fg.rgb * fg.a + bg.rgb * bg.a * (1.0 - fg.a)) / outAlpha;
+    return vec4<f32>(outRgb, outAlpha);
+}
