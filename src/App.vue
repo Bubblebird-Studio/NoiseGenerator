@@ -29,6 +29,26 @@
           <span class="m-3" v-if="is3d">{{ xTiles }} x {{ yTiles }} tiles</span>
         </p>
 
+        <div class="input-group mb-3">
+          <label class="input-group-text">Display</label>
+          <label class="input-group-text" for="outputR">R</label>
+          <div class="input-group-text">
+            <input class="form-check-input" type="checkbox" id="outputR" v-model="settings.channels[0].display">
+          </div>
+          <label class="input-group-text" for="outputG">G</label>
+          <div class="input-group-text">
+            <input class="form-check-input" type="checkbox" id="outputG" v-model="settings.channels[1].display">
+          </div>
+          <label class="input-group-text" for="outputB">B</label>
+          <div class="input-group-text">
+            <input class="form-check-input" type="checkbox" id="outputB" v-model="settings.channels[2].display">
+          </div>
+          <label class="input-group-text" for="outputA">A</label>
+          <div class="input-group-text">
+            <input class="form-check-input" type="checkbox" id="outputA" v-model="settings.channels[3].display">
+          </div>
+        </div>
+
         <div class="btn-group" role="group">
           <button class="btn btn-primary mt-3" type="button" @click="exportImage()"><i class="bi bi-download"></i> Export PNG</button>
           <button class="btn btn-secondary mt-3" type="button" @click="copyImageToClipboard()"><i class="bi bi-copy"></i> Copy</button>
@@ -243,16 +263,24 @@
             </span>
           </div>
 
-          <!-- <div v-else class="input-group mb-3">
-            <label class="input-group-text" for="normalScale">Normal scale</label>
+          <label class="">Gain - Gamma - offset</label>
+s
+          <div class="input-group mb-3">
             <div class="input-group-text">
-              <input type="range" class="form-range" min="0.0" max="2.0" step="0.01" v-model="settings.normalScale" @dblclick="settings.normalScale = defaultSettings.normalScale">
+              <input type="range" class="form-range" :style="{width: '60px'}" min="0.0" max="2.0" step="0.01" id="gain" v-model="activeChannel.gain" @dblclick="activeChannel.gain = 1.0">
             </div>
-            <label class="input-group-text" for="normalScale">{{ settings.normalScale }}</label>
-            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the strength of the normal map.">
-              <i class="bi bi-question"></i>
-            </span>
-          </div> -->
+            <label class="input-group-text" for="gain">{{ activeChannel.gain }}</label>
+
+            <div class="input-group-text">
+              <input type="range" class="form-range" :style="{width: '60px'}" min="0.0" max="2.0" step="0.01" id="gamma" v-model="activeChannel.gamma" @dblclick="activeChannel.gamma = 1.0">
+            </div>
+            <label class="input-group-text" for="gamma">{{ activeChannel.gamma }}</label>
+
+            <div class="input-group-text">
+              <input type="range" class="form-range" :style="{width: '60px'}" min="-1.0" max="1.0" step="0.01" id="offset" v-model="activeChannel.offset" @dblclick="activeChannel.offset = 0.0">
+            </div>
+            <label class="input-group-text" for="offset">{{ activeChannel.offset }}</label>
+          </div>
 
           <div class="input-group mb-3">
             <label class="input-group-text" for="invert">Invert</label>
@@ -376,46 +404,46 @@ const defaultGeneratorSettings = {
 
 const channelsPresets = {
     "Default": [
-      { generator: 0, type: 0, invert: false },
-      { generator: 0, type: 0, invert: false },
-      { generator: 0, type: 0, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
     "Each generator its channel": [
-      { generator: 0, type: 0, invert: false },
-      { generator: 0, type: 3, invert: false },
-      { generator: 0, type: 3, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
     "Generator 0 to Normal map (OpenGL)": [
-      { generator: 0, type: 1, invert: false },
-      { generator: 0, type: 2, invert: false },
-      { generator: 0, type: 4, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 1, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 2, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
     "Generator 0 to Normal map (DirectX)": [
-      { generator: 0, type: 1, invert: false },
-      { generator: 0, type: 2, invert: true },
-      { generator: 0, type: 4, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 1, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 2, invert: true , gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
     "Generator 0 to red channel": [
-      { generator: 0, type: 0, invert: false },
-      { generator: 0, type: 3, invert: false },
-      { generator: 0, type: 3, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
     "Generator 1 to green channel": [
-      { generator: 0, type: 3, invert: false },
-      { generator: 1, type: 0, invert: false },
-      { generator: 0, type: 3, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 1, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
     "Generator 2 to blue channel": [
-      { generator: 0, type: 3, invert: false },
-      { generator: 0, type: 3, invert: false },
-      { generator: 2, type: 0, invert: false },
-      { generator: 0, type: 4, invert: false },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 3, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 2, type: 0, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
+      { display: true, generator: 0, type: 4, invert: false, gain: 1.0, gamma: 1.0, offset: 0.0 },
     ],
 }
 
@@ -523,18 +551,34 @@ function GetUniformData(generator: number) {
     settings.generators[generator].voronoiDistanceType,
     settings.generators[generator].seamless ? 1 : 0,
     settings.generators[generator].seed,
+    settings.channels[0].display,
     settings.channels[0].generator,
     settings.channels[0].type,
     settings.channels[0].invert ? 1 : 0,
+    settings.channels[0].gain,
+    settings.channels[0].gamma,
+    settings.channels[0].offset,
+    settings.channels[1].display,
     settings.channels[1].generator,
     settings.channels[1].type,
     settings.channels[1].invert ? 1 : 0,
+    settings.channels[1].gain,
+    settings.channels[1].gamma,
+    settings.channels[1].offset,
+    settings.channels[2].display,
     settings.channels[2].generator,
     settings.channels[2].type,
     settings.channels[2].invert ? 1 : 0,
+    settings.channels[2].gain,
+    settings.channels[2].gamma,
+    settings.channels[2].offset,
+    settings.channels[3].display,
     settings.channels[3].generator,
     settings.channels[3].type,
     settings.channels[3].invert ? 1 : 0,
+    settings.channels[3].gain,
+    settings.channels[3].gamma,
+    settings.channels[3].offset,
   ]);
 }
 
