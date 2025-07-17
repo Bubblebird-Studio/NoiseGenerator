@@ -4,7 +4,7 @@
       <div class="position-relative">
         <h1 class="display-3">Noise Generator</h1><span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">New version</span>
       </div>
-      <p><small>A simple random noise generator by Bubblebird Studio. <a href="https://bubblebirdstudio.com/" target="_blank">Buy our games</a> to support this tool!</small></p>
+      <p><small>A simple & fast random noise generator by Bubblebird Studio. <a href="https://bubblebirdstudio.com/" target="_blank">Buy our games</a> to support this tool!</small></p>
     </div>
 
     <div v-if="error != ''" class="alert alert-danger" role="alert">
@@ -295,7 +295,12 @@
         </div>
       </div>
       <div class="row m-5">
-        <p class="text-secondary"><a href="mailto:contact@bubblebirdstudio.com">Contact us</a> for feature request or bug report. Visit the <a href="https://github.com/Bubblebird-Studio/NoiseGenerator">Github project page</a>.</p>
+        <p class="text-secondary">
+          <a href="mailto:contact@bubblebirdstudio.com">Contact us</a> for feature request or bug report. Visit the <a href="https://github.com/Bubblebird-Studio/NoiseGenerator" target="_blank">Github project page</a>.
+        </p>
+        <p class="text-secondary">
+          Access the previous version of this tool <a href="https://noisegenold.bubblebirdstudio.com" target="_blank">here</a>.
+        </p>
       </div>
     </div>
   </div>
