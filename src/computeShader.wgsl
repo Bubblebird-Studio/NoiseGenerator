@@ -102,12 +102,10 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
   }
 
   if (noiseType == NOISE_TYPE_VORONOI) {
-    let cellSize = voronoiCellSize * float(resolutionX);
-    let gridResolution = int3(max(float3(1.0), float3(resolution) / cellSize));
-    let tileSize = float3(gridResolution) * cellSize;
-
-    let position = float3(coord) / float3(resolution) * tileSize;
-    let cell = int3(floor(position / cellSize));
+    let grid_resolution = int(floor(1.0 / voronoiCellSize));
+    let position = float3(coord) / float3(resolution);
+    let cellSize = 1.0 / float(grid_resolution);
+    let cell = int3(floor(position * float(grid_resolution)));
 
     let weights = float4(voronoiWeight1, voronoiWeight2, voronoiWeight3, voronoiWeight4);
     var minDistances = float4(999999.0, 999999.0, 999999.0, 999999.0);
@@ -117,13 +115,13 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
         for (var dz = -1; dz <= 1; dz++) {
           var neighbor_cell = cell + int3(dx, dy, dz);
           if (seamless) {
-            neighbor_cell = (neighbor_cell + gridResolution) % gridResolution;
+            neighbor_cell = (neighbor_cell + grid_resolution) % grid_resolution;
           }
 
           let feature_point = (float3(neighbor_cell) + rand_vector(hash_int3(neighbor_cell) + seed)) * cellSize;
           var delta = feature_point - position;
           if (seamless) {
-            delta = min(abs(delta), tileSize - abs(delta)); // toroidal distance
+            delta = min(abs(delta), 1.0 - abs(delta)); // toroidal distance
           }
           let dist = length(delta) / cellSize;
 
@@ -148,7 +146,6 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
     }
 
     output = dot(minDistances, weights);
-    //output = float(gridResolution.x) / 256.0;
   }
   
   noiseBuffer[index * 4 + generatorIndex] = output;
