@@ -110,11 +110,12 @@ fn hash_uint(x: uint) -> uint {
 }
 
 
-fn rand_vector(s: uint) -> float3 {
-  let x = fract(sin(float(s + 1)) * 43758.5453);
-  let y = fract(sin(float(s + 2)) * 12345.6789);
-  let z = fract(sin(float(s + 3)) * 98765.4321);
-  return float3(x, y, z);
+fn rand_vector(hash: uint) -> float3 {
+  let x = hash_uint(hash ^ 0xA53C9A1F);
+  let y = hash_uint(hash ^ 0xC2B2AE35);
+  let z = hash_uint(hash ^ 0x27D4EB2F);
+  
+  return float3(f32(x) / 4294967296.0, f32(y) / 4294967296.0, f32(z) / 4294967296.0);
 }
 
 
