@@ -38,11 +38,11 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
   let perlinOctaves = uint(settings.perlinOctaves);
   let perlinLacunarity = float(settings.perlinLacunarity);
   let voronoiCellSize = float(settings.voronoiCellSize);
-  let voronoiFalloff = float(settings.voronoiFalloff);
   let voronoiWeight1 = float(settings.voronoiWeight1);
   let voronoiWeight2 = float(settings.voronoiWeight2);
   let voronoiWeight3 = float(settings.voronoiWeight3);
   let voronoiWeight4 = float(settings.voronoiWeight4);
+  let voronoiDistanceType = uint(settings.voronoiDistanceType);
   let seamless = uint(settings.seamless) != 0u;
   let seed = uint(settings.seed);
 
@@ -104,11 +104,11 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
   if (noiseType == NOISE_TYPE_VORONOI) {
     let grid_resolution = int(floor(1.0 / voronoiCellSize));
     let position = float3(coord) / float3(resolution);
-    let cellSize = 1.0 / float(grid_resolution);
+    let cell_size = 1.0 / float(grid_resolution);
     let cell = int3(floor(position * float(grid_resolution)));
 
     let weights = float4(voronoiWeight1, voronoiWeight2, voronoiWeight3, voronoiWeight4);
-    var minDistances = float4(999999.0, 999999.0, 999999.0, 999999.0);
+    var min_distances = float4(999999.0, 999999.0, 999999.0, 999999.0);
 
     for (var dx = -1; dx <= 1; dx++) {
       for (var dy = -1; dy <= 1; dy++) {
@@ -118,34 +118,48 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
             neighbor_cell = (neighbor_cell + grid_resolution) % grid_resolution;
           }
 
-          let feature_point = (float3(neighbor_cell) + rand_vector(hash_int3(neighbor_cell) + seed)) * cellSize;
+          let feature_point = (float3(neighbor_cell) + rand_vector(hash_int3(neighbor_cell) + seed)) * cell_size;
           var delta = feature_point - position;
           if (seamless) {
             delta = min(abs(delta), 1.0 - abs(delta)); // toroidal distance
           }
-          let dist = length(delta) / cellSize;
+          delta /= cell_size;
+          var dist = 0.0;
+
+          if (voronoiDistanceType == VORONOI_DISTANCE_TYPE_EUCLIDEAN) {
+            dist = length(delta);
+          }
+          if (voronoiDistanceType == VORONOI_DISTANCE_TYPE_SQUARED) {
+            dist = (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+          }
+          if (voronoiDistanceType == VORONOI_DISTANCE_TYPE_MANHATTAN) {
+            dist = abs(delta.x) + abs(delta.y) + abs(delta.z);
+          }
+          if (voronoiDistanceType == VORONOI_DISTANCE_TYPE_CHEBYSHEV) {
+            dist = max(max(abs(delta.x), abs(delta.y)), abs(delta.z));
+          }
 
           // insert sorted
-          if (dist < minDistances.x) {
-            minDistances.w = minDistances.z;
-            minDistances.z = minDistances.y;
-            minDistances.y = minDistances.x;
-            minDistances.x = dist;
-          } else if (dist < minDistances.y) {
-            minDistances.w = minDistances.z;
-            minDistances.z = minDistances.y;
-            minDistances.y = dist;
-          } else if (dist < minDistances.z) {
-            minDistances.w = minDistances.z;
-            minDistances.z = dist;
-          } else if (dist < minDistances.w) {
-            minDistances.w = dist;
+          if (dist < min_distances.x) {
+            min_distances.w = min_distances.z;
+            min_distances.z = min_distances.y;
+            min_distances.y = min_distances.x;
+            min_distances.x = dist;
+          } else if (dist < min_distances.y) {
+            min_distances.w = min_distances.z;
+            min_distances.z = min_distances.y;
+            min_distances.y = dist;
+          } else if (dist < min_distances.z) {
+            min_distances.w = min_distances.z;
+            min_distances.z = dist;
+          } else if (dist < min_distances.w) {
+            min_distances.w = dist;
           }
         }
       }
     }
 
-    output = dot(minDistances, weights);
+    output = dot(min_distances, weights);
   }
   
   noiseBuffer[index * 4 + generatorIndex] = output;

@@ -165,12 +165,11 @@
               <label class="input-group-text" for="voronoiWeight4">{{ activeGenerator.voronoiWeight4 }}</label>
             </div>
             <div class="input-group mb-1">
-              <label class="input-group-text" for="voronoiFalloff">Falloff</label>
-              <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="3.0" step="0.01" id="voronoiFalloff" v-model="activeGenerator.voronoiFalloff" @dblclick="activeGenerator.voronoiFalloff = defaultSettings.generators[0].voronoiFalloff">
-              </div>
-              <label class="input-group-text" for="voronoiFalloff">{{ activeGenerator.voronoiFalloff }}</label>
-              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls the curve of the gradient. For a linear gradient, use 1.0.">
+              <label class="input-group-text" for="voronoiDistanceType">Distance type</label>
+              <select class="form-select" v-model="activeGenerator.voronoiDistanceType" id="voronoiDistanceType">
+                <option v-for="(distanceType, i) in distanceTypes" :value="i">{{ distanceType }}</option>
+              </select>
+              <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose the algorithm to use for distance calculation">
                 <i class="bi bi-question"></i>
               </span>
             </div>
@@ -351,6 +350,7 @@ let computePipeline: any;
 let compositingPipeline: any;
 
 const noiseTypes = ["Random", "Perlin", "Voronoi"];
+const distanceTypes = ["Euclidean", "Squared", "Manhattan", "Chebyshev"];
 const sourceTypes = ["Value", "Normal X", "Normal Y", "0", "1"];
 const channelsData = [];
 const generating = ref(false);
@@ -366,11 +366,11 @@ const defaultGeneratorSettings = {
   perlinOctaves: 1,
   perlinLacunarity: 2.0,
   voronoiCellSize: 0.2,
-  voronoiFalloff: 1.0,
   voronoiWeight1: 1.0,
   voronoiWeight2: 0.0,
   voronoiWeight3: 0.0,
   voronoiWeight4: 0.0,
+  voronoiDistanceType: 0,
   blueNoiseRadius: 1.5
 }
 
@@ -516,11 +516,11 @@ function GetUniformData(generator: number) {
     settings.generators[generator].perlinOctaves,
     settings.generators[generator].perlinLacunarity,
     settings.generators[generator].voronoiCellSize,
-    settings.generators[generator].voronoiFalloff,
     settings.generators[generator].voronoiWeight1,
     settings.generators[generator].voronoiWeight2,
     settings.generators[generator].voronoiWeight3,
     settings.generators[generator].voronoiWeight4,
+    settings.generators[generator].voronoiDistanceType,
     settings.generators[generator].seamless ? 1 : 0,
     settings.generators[generator].seed,
     settings.channels[0].generator,

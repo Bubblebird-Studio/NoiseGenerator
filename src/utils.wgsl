@@ -17,14 +17,17 @@ const NOISE_TYPE_RANDOM = 0;
 const NOISE_TYPE_PERLIN = 1;
 const NOISE_TYPE_VORONOI = 2;
 
+const VORONOI_DISTANCE_TYPE_EUCLIDEAN = 0;
+const VORONOI_DISTANCE_TYPE_SQUARED = 1;
+const VORONOI_DISTANCE_TYPE_MANHATTAN = 2;
+const VORONOI_DISTANCE_TYPE_CHEBYSHEV = 3;
+
 const VALUE_TYPE_VALUE = 0;
 const VALUE_TYPE_NORMALX = 1;
 const VALUE_TYPE_NORMALY = 2;
 const VALUE_TYPE_0 = 3;
 const VALUE_TYPE_1 = 4;
 
-const F3 = 0.3333333;   // 1/3
-const G3 = 0.1666667;   // 1/6
 
 struct Settings {
   generatorIndex: float,
@@ -38,11 +41,11 @@ struct Settings {
   perlinOctaves: float,
   perlinLacunarity: float,
   voronoiCellSize: float,
-  voronoiFalloff: float,
   voronoiWeight1: float,
   voronoiWeight2: float,
   voronoiWeight3: float,
   voronoiWeight4: float,
+  voronoiDistanceType: float,
   seamless: float,
   seed: float,
   channel0generator: float,
@@ -121,11 +124,6 @@ fn alpha_blend(fg: float4, bg: float4) -> float4 {
 
 fn fade(t: float3) -> float3 {
   return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-}
-
-
-fn permute(x: float, period: float) -> float {
-  return ((34.0 * x + 1.0) * x);
 }
 
 
