@@ -29,7 +29,7 @@
           <span class="m-3" v-if="is3d">{{ xTiles }} x {{ yTiles }} tiles</span>
         </p>
 
-        <div class="input-group mb-3">
+        <div class="input-group mb-3 justify-content-center">
           <label class="input-group-text">Display</label>
           <label class="input-group-text" for="outputR">R</label>
           <div class="input-group-text">
@@ -58,7 +58,6 @@
       </div>
 
       <div class="col">
-
         <div class="input-group mb-3">
           <label class="input-group-text" for="resolution">Resolution</label>
           <div class="input-group-text">
@@ -73,12 +72,12 @@
             <option value="2d">2D</option>
             <option value="3d">3D</option>
           </select>
-          <span v-if="settings.dimension == '3d' && settings.resolution > 256" class="input-group-text text-danger" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Resolution is too high for 3d. Generating an image will fall back to 2d.">
+          <span v-show="settings.dimension == '3d' && settings.resolution > 256" class="input-group-text text-danger" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Resolution is too high for 3d. Generating an image will fall back to 2d.">
             <i class="bi bi-exclamation-triangle-fill"></i>
           </span>
         </div>
 
-        <div v-if="settings.dimension == '3d'" class="input-group mb-3">
+        <div v-show="settings.dimension == '3d'" class="input-group mb-3">
           <label class="input-group-text" for="layout">3D tiles layout</label>
           <select class="form-select" id="layout" v-model="settings.layout">
             <option value="auto">Auto</option>
@@ -118,13 +117,13 @@
             </select>
           </div>
 
-          <div v-if="activeGenerator.type == noiseTypes.indexOf('Perlin')" class="settings m-3">
+          <div v-show="activeGenerator.type == noiseTypes.indexOf('Perlin')" class="settings m-3">
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinSize">Size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" id="perlinSize" v-model="activeGenerator.perlinSize">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.perlinSize">
               </div>
-              <label class="input-group-text" for="perlinSize">{{ activeGenerator.perlinSize }}</label>
+              <input type="number" class="form-control" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.perlinSize" id="perlinSize">
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinOctaves">Octaves</label>
@@ -136,53 +135,53 @@
                 <i class="bi bi-question"></i>
               </span>
             </div>
-            <div class="input-group mb-1">
+            <div v-show="activeGenerator.perlinOctaves > 1" class="input-group mb-1">
               <label class="input-group-text" for="perlinLacunarity">Lacunarity</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" id="perlinLacunarity" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.generators[0].perlinLacunarity">
+                <input type="range" class="form-range" min="1.0" max="10.0" step="0.01" v-model="activeGenerator.perlinLacunarity" @dblclick="activeGenerator.perlinLacunarity = defaultSettings.generators[0].perlinLacunarity">
               </div>
-              <label class="input-group-text" for="perlinLacunarity">{{ activeGenerator.perlinLacunarity }}</label>
+              <input type="number" class="form-control" min="1.0" max="10.0" step="0.01" v-model="activeGenerator.perlinLacunarity" id="perlinLacunarity">
               <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Controls how quickly frequency increases with each octave, affecting texture detail.">
                 <i class="bi bi-question"></i>
               </span>
             </div>
           </div>
 
-          <div v-if="activeGenerator.type == noiseTypes.indexOf('Voronoi')" class="settings m-3">
+          <div v-show="activeGenerator.type == noiseTypes.indexOf('Voronoi')" class="settings m-3">
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiCellSize">Cell size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" id="voronoiCellSize" v-model="activeGenerator.voronoiCellSize">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize">
               </div>
-              <label class="input-group-text" for="voronoiCellSize">{{ activeGenerator.voronoiCellSize }}</label>
+              <input type="number" class="form-control" min="0.01" max="0.3" step="0.01" v-model="activeGenerator.voronoiCellSize" id="voronoiCellSize">
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight1">Weight feature 1</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight1" v-model="activeGenerator.voronoiWeight1" @dblclick="activeGenerator.voronoiWeight1 = 0">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight1" @dblclick="activeGenerator.voronoiWeight1 = 0">
               </div>
-              <label class="input-group-text" for="voronoiWeight1">{{ activeGenerator.voronoiWeight1 }}</label>
+              <input type="number" class="form-control" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight1" id="voronoiWeight1">
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight2">Weight feature 2</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight2" v-model="activeGenerator.voronoiWeight2" @dblclick="activeGenerator.voronoiWeight2 = 0">
               </div>
-              <label class="input-group-text" for="voronoiWeight2">{{ activeGenerator.voronoiWeight2 }}</label>
+              <input type="number" class="form-control" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight2" id="voronoiWeight2">
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight3">Weight feature 3</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight3" v-model="activeGenerator.voronoiWeight3" @dblclick="activeGenerator.voronoiWeight3 = 0">
               </div>
-              <label class="input-group-text" for="voronoiWeight3">{{ activeGenerator.voronoiWeight3 }}</label>
+              <input type="number" class="form-control" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight3" id="voronoiWeight3">
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight4">Weight feature 4</label>
               <div class="input-group-text">
                 <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight4" v-model="activeGenerator.voronoiWeight4" @dblclick="activeGenerator.voronoiWeight4 = 0">
               </div>
-              <label class="input-group-text" for="voronoiWeight4">{{ activeGenerator.voronoiWeight4 }}</label>
+              <input type="number" class="form-control" min="-2.0" max="2.0" step="0.01" v-model="activeGenerator.voronoiWeight4" id="voronoiWeight4">
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiDistanceType">Distance type</label>
@@ -263,8 +262,6 @@
             </span>
           </div>
 
-          <label class="">Gain - Gamma - offset</label>
-s
           <div class="input-group mb-3">
             <div class="input-group-text">
               <input type="range" class="form-range" :style="{width: '60px'}" min="0.0" max="2.0" step="0.01" id="gain" v-model="activeChannel.gain" @dblclick="activeChannel.gain = 1.0">
@@ -280,6 +277,10 @@ s
               <input type="range" class="form-range" :style="{width: '60px'}" min="-1.0" max="1.0" step="0.01" id="offset" v-model="activeChannel.offset" @dblclick="activeChannel.offset = 0.0">
             </div>
             <label class="input-group-text" for="offset">{{ activeChannel.offset }}</label>
+
+            <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Adjusts the gain, gamma curve and offset values">
+              <i class="bi bi-question"></i>
+            </span>
           </div>
 
           <div class="input-group mb-3">
@@ -387,7 +388,7 @@ const canvas = useTemplateRef("canvas");
 const initialSeed = getRandomSeed();
 
 const defaultGeneratorSettings = {
-  type: 2, // set to 0
+  type: 0,
   seamless: true,
   seed: initialSeed,
   perlinSize: 0.2,
@@ -504,7 +505,7 @@ watch(settings, (newValue, oldValue) => {
 })
 
 onMounted(async () => {
-  [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels
+  [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl)); // doesn't work on hidden panels: use v-show instead of v-if
   try {
     const adapter = await navigator.gpu.requestAdapter();
     device = await adapter.requestDevice({

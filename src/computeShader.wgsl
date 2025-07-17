@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
   };
 
   if (noiseType == NOISE_TYPE_RANDOM) {
-    output = rand01(hash_int3(int3(coord)) + seed);
+    output = rand01(hash_int3(int3(coord * 500)) + seed);
   }
 
   if (noiseType == NOISE_TYPE_PERLIN) {
