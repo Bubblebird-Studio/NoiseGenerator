@@ -139,28 +139,28 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight1">Weight feature 1</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight1" v-model="activeGenerator.voronoiWeight1">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight1" v-model="activeGenerator.voronoiWeight1" @dblclick="activeGenerator.voronoiWeight1 = 0">
               </div>
               <label class="input-group-text" for="voronoiWeight1">{{ activeGenerator.voronoiWeight1 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight2">Weight feature 2</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight2" v-model="activeGenerator.voronoiWeight2">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight2" v-model="activeGenerator.voronoiWeight2" @dblclick="activeGenerator.voronoiWeight2 = 0">
               </div>
               <label class="input-group-text" for="voronoiWeight2">{{ activeGenerator.voronoiWeight2 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight3">Weight feature 3</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight3" v-model="activeGenerator.voronoiWeight3">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight3" v-model="activeGenerator.voronoiWeight3" @dblclick="activeGenerator.voronoiWeight3 = 0">
               </div>
               <label class="input-group-text" for="voronoiWeight3">{{ activeGenerator.voronoiWeight3 }}</label>
             </div>
             <div class="input-group mb-1">
               <label class="input-group-text" for="voronoiWeight4">Weight feature 4</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight4" v-model="activeGenerator.voronoiWeight4">
+                <input type="range" class="form-range" min="-2.0" max="2.0" step="0.01" id="voronoiWeight4" v-model="activeGenerator.voronoiWeight4" @dblclick="activeGenerator.voronoiWeight4 = 0">
               </div>
               <label class="input-group-text" for="voronoiWeight4">{{ activeGenerator.voronoiWeight4 }}</label>
             </div>
