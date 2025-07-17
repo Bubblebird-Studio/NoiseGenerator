@@ -25,50 +25,29 @@ fn InsertSorted(distances: float4, value: float) -> float4 {
 }
 
 
-fn simplex_noise3D(p: float3, period: int) -> float {
-  // Skew
-  let s = f32(p.x + p.y + p.z) * F3;
-  let i = floor(p + s);
-  let t = (i.x + i.y + i.z) * G3;
-  let x0 = p - (i - t);
+fn perlin_noise3D(p: float3, seed: uint) -> float {
+  let pi = int3(floor(p));
+  let pf = fract(p);
+  let f = fade(pf);
 
-  // Simplex corners
-  let g = step(x0.yzx, x0.xyz);
-  let l = 1.0 - g;
-  let i1 = min(g.xyz, l.zxy);
-  let i2 = max(g.xyz, l.zxy);
+  let n000 = grad(hash_int3(pi + int3(0, 0, 0)) + seed, pf - float3(0, 0, 0));
+  let n001 = grad(hash_int3(pi + int3(0, 0, 1)) + seed, pf - float3(0, 0, 1));
+  let n010 = grad(hash_int3(pi + int3(0, 1, 0)) + seed, pf - float3(0, 1, 0));
+  let n011 = grad(hash_int3(pi + int3(0, 1, 1)) + seed, pf - float3(0, 1, 1));
+  let n100 = grad(hash_int3(pi + int3(1, 0, 0)) + seed, pf - float3(1, 0, 0));
+  let n101 = grad(hash_int3(pi + int3(1, 0, 1)) + seed, pf - float3(1, 0, 1));
+  let n110 = grad(hash_int3(pi + int3(1, 1, 0)) + seed, pf - float3(1, 1, 0));
+  let n111 = grad(hash_int3(pi + int3(1, 1, 1)) + seed, pf - float3(1, 1, 1));
 
-  // Cell coordinates
-  let x1 = x0 - i1 + G3;
-  let x2 = x0 - i2 + 2.0 * G3;
-  let x3 = x0 - 1.0 + 3.0 * G3;
+  let x00 = mix(n000, n100, f.x);
+  let x01 = mix(n001, n101, f.x);
+  let x10 = mix(n010, n110, f.x);
+  let x11 = mix(n011, n111, f.x);
 
-  // Permutation indices (tiled)
-  let ii = int3(i) % period;
-  let i1_ = ii + int3(i1);
-  let i2_ = ii + int3(i2);
-  let i3_ = ii + 1;
+  let y0 = mix(x00, x10, f.y);
+  let y1 = mix(x01, x11, f.y);
 
-  // Hash gradients (fully tiled)
-  let period_float = float(period);
-  let h0 = permute(permute(permute(float(ii.x), period_float) + float(ii.y), period_float) + float(ii.z), period_float);
-  let h1 = permute(permute(permute(float(i1_.x), period_float) + float(i1_.y), period_float) + float(i1_.z), period_float);
-  let h2 = permute(permute(permute(float(i2_.x), period_float) + float(i2_.y), period_float) + float(i2_.z), period_float);
-  let h3 = permute(permute(permute(float(i3_.x), period_float) + float(i3_.y), period_float) + float(i3_.z), period_float);
-
-  let g0 = grad(h0);
-  let g1 = grad(h1);
-  let g2 = grad(h2);
-  let g3 = grad(h3);
-
-  let t0 = 0.6 - float4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3));
-  var n = max(t0, float4(0.0));
-  n = n * n;
-  n = n * n;
-
-  let d = float4(dot(g0, x0), dot(g1, x1), dot(g2, x2), dot(g3, x3));
-
-  return dot(n, d) * 32.0;  // Scale to [-1,1]
+  return mix(y0, y1, f.z);
 }
 
 
@@ -108,8 +87,7 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
   }
 
   if (noiseType == NOISE_TYPE_PERLIN) {
-    let period = 32;
-    let pos = float3(coord) / float3(resolution) * float3(float(period)) / float3(perlinSize);
+    let pos = float3(coord) / float3(resolution) / float3(perlinSize);
     let amplitude = 1.0;
     var frequency = 1.0;
     var sum = 0.0;
@@ -117,14 +95,14 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
 
     for (var i = 0u; i < perlinOctaves; i++)
     {
-        sum += simplex_noise3D(pos * frequency, period) * amplitude;
-        maxAmplitude += amplitude;
+      sum += perlin_noise3D(pos * frequency, seed) * amplitude;
+      maxAmplitude += amplitude;
 
-        frequency *= perlinLacunarity;
-        //amplitude *= gain;
+      frequency *= perlinLacunarity;
+      //amplitude *= gain;
     }
 
-    output = sum / maxAmplitude;
+    output = sum / maxAmplitude * 0.5 + 0.5;
   }
 
   if (noiseType == NOISE_TYPE_VORONOI) {
@@ -132,7 +110,7 @@ fn main(@builtin(global_invocation_id) coord: uint3) {
     let gridResolution = int3(max(float3(1.0), float3(resolution) / cellSize));
     let tileSize = float3(gridResolution) * cellSize;
 
-    let position = float3(float(x), float(y), float(z)) / float3(resolution) * tileSize;
+    let position = float3(coord) / float3(resolution) * tileSize;
     let cell = int3(floor(position / cellSize));
 
     let weights = float4(voronoiWeight1, voronoiWeight2, voronoiWeight3, voronoiWeight4);

@@ -60,81 +60,76 @@ struct Settings {
 };
 
 
+fn hash_int3(v: int3) -> uint {
+    var x: u32 = bitcast<u32>(v.x);
+    var y: u32 = bitcast<u32>(v.y);
+    var z: u32 = bitcast<u32>(v.z);
 
-fn frac(x: float) -> float {
-  return x - floor(x);
-}
+    var h: u32 = 0xdeadbeefu;
+    h ^= x + 0x9e3779b9u + (h << 6) + (h >> 2);
+    h ^= y + 0x9e3779b9u + (h << 6) + (h >> 2);
+    h ^= z + 0x9e3779b9u + (h << 6) + (h >> 2);
 
-
-fn frac4(x: float4) -> float4 {
-  return x - floor(x);
-}
-
-
-fn hash_int3(p: int3) -> uint {
-  var h = 2166136261u;
-  h = (h ^ uint(p.x)) * 16777619u;
-  h = (h ^ uint(p.y)) * 16777619u;
-  h = (h ^ uint(p.z)) * 16777619u;
-  return h;
-}
-
-
-fn hash_uint(x: uint) -> uint {
-    var h = x;
     h ^= h >> 16;
-    h *= 0x85ebca6b;
+    h *= 0x85ebca6bu;
     h ^= h >> 13;
-    h *= 0xc2b2ae35;
+    h *= 0xc2b2ae35u;
     h ^= h >> 16;
+
     return h;
 }
 
 
+fn hash_uint(x: uint) -> uint {
+  var h = x;
+  h ^= h >> 16;
+  h *= 0x85ebca6b;
+  h ^= h >> 13;
+  h *= 0xc2b2ae35;
+  h ^= h >> 16;
+  return h;
+}
+
+
 fn rand_vector(s: uint) -> float3 {
-  let x = frac(sin(float(s + 1)) * 43758.5453);
-  let y = frac(sin(float(s + 2)) * 12345.6789);
-  let z = frac(sin(float(s + 3)) * 98765.4321);
+  let x = fract(sin(float(s + 1)) * 43758.5453);
+  let y = fract(sin(float(s + 2)) * 12345.6789);
+  let z = fract(sin(float(s + 3)) * 98765.4321);
   return float3(x, y, z);
 }
 
 
 fn rand01(hash: uint) -> float {
-    // Mask to keep only the positive 31 bits
-    let mixed = hash_uint(hash);
-    let masked: uint = (mixed & 0x7FFFFFFF);
-    // Convert to float and normalize to [0.0, 1.0)
-    return float(masked) / float(0x7FFFFFFF);
+  // Mask to keep only the positive 31 bits
+  let mixed = hash_uint(hash);
+  let masked: uint = (mixed & 0x7FFFFFFF);
+  // Convert to float and normalize to [0.0, 1.0)
+  return float(masked) / float(0x7FFFFFFF);
 }
 
 
 fn alpha_blend(fg: float4, bg: float4) -> float4 {
-    let outAlpha = fg.a + bg.a * (1.0 - fg.a);
-    if (outAlpha == 0.0) {
-        return float4(0.0);
-    }
+  let outAlpha = fg.a + bg.a * (1.0 - fg.a);
+  if (outAlpha == 0.0) {
+    return float4(0.0);
+  }
 
-    let outRgb = (fg.rgb * fg.a + bg.rgb * bg.a * (1.0 - fg.a)) / outAlpha;
-    return float4(outRgb, outAlpha);
+  let outRgb = (fg.rgb * fg.a + bg.rgb * bg.a * (1.0 - fg.a)) / outAlpha;
+  return float4(outRgb, outAlpha);
 }
 
 
-fn mod289(x: float3) -> float3 {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
+fn fade(t: float3) -> float3 {
+  return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
 
 fn permute(x: float, period: float) -> float {
-    return ((34.0 * x + 1.0) * x) % float(period);
+  return ((34.0 * x + 1.0) * x);
 }
 
 
-fn grad(hash: float) -> float3 {
-    let h = int(hash) & 15;
-    let grad = float3(
-        select(1.0, -1.0, (h & 1) == 0),
-        select(1.0, -1.0, (h & 2) == 0),
-        select(1.0, -1.0, (h & 4) == 0)
-    );
-    return normalize(grad);
+fn grad(hash: uint, p: float3) -> float {
+  let h = hash & 15;
+  return dot(rand_vector(h) * 2.0 - 1.0, p);
 }

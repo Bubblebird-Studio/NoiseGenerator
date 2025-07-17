@@ -102,7 +102,7 @@
             <div class="input-group mb-1">
               <label class="input-group-text" for="perlinSize">Size</label>
               <div class="input-group-text">
-                <input type="range" class="form-range" min="0.1" max="100.0" step="0.1" id="perlinSize" v-model="activeGenerator.perlinSize">
+                <input type="range" class="form-range" min="0.01" max="0.3" step="0.01" id="perlinSize" v-model="activeGenerator.perlinSize">
               </div>
               <label class="input-group-text" for="perlinSize">{{ activeGenerator.perlinSize }}</label>
             </div>
@@ -362,7 +362,7 @@ const defaultGeneratorSettings = {
   type: 1, // set to 0
   seamless: true,
   seed: initialSeed,
-  perlinSize: 10.0,
+  perlinSize: 0.2,
   perlinOctaves: 1,
   perlinLacunarity: 2.0,
   voronoiCellSize: 0.2,
