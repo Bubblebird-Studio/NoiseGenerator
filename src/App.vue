@@ -813,7 +813,5 @@ function fixSettingsCollection() {
 </script>
 
 <style lang="scss">
-@use "../node_modules/bootstrap/dist/css/bootstrap.min.css";
-@use "../node_modules/bootstrap-icons/font/bootstrap-icons.css";
 @use './style.css';
 </style>
