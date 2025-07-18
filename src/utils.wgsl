@@ -86,6 +86,7 @@ struct Render {
   renderType: float,
   lightPositionX: float,
   lightPositionY: float,
+  activeGenerator: float,
 }
 
 

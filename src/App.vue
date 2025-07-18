@@ -15,10 +15,13 @@
     <div class="row">
       <div class="col-md-auto">
         <div class="viewer overflow-auto">
-          <div v-if="generating" id="generatingPlanel">
+          <div v-if="generating" id="generatingPlanel" class="d-flex align-items-center justify-content-center">
             <div class="spinner-border" role="status">
               <span class="visually-hidden">Generating...</span>
             </div>
+          </div>
+          <div v-if="renderType == 1" id="previewInfoPanel" class="d-flex align-content-center justify-content-center">
+            <p>Previewing generator G{{ settings.activeGenerator }}</p>
           </div>
           <canvas width="256" height="256" ref="canvas" @mouseenter="renderType = 1" @mouseleave="renderType = 0" @mousemove="handleMouseMove"></canvas>
         </div>
@@ -96,16 +99,16 @@
             <a class="nav-link disabled" aria-disabled="true">Generators</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 0}" role="button" data-channel=0 @click="settings.activeGenerator = 0">0</a>
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 0}" role="button" data-channel=0 @click="settings.activeGenerator = 0">G0</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 1}" role="button" data-channel=1 @click="settings.activeGenerator = 1">1</a>
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 1}" role="button" data-channel=1 @click="settings.activeGenerator = 1">G1</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 2}" role="button" data-channel=2 @click="settings.activeGenerator = 2">2</a>
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 2}" role="button" data-channel=2 @click="settings.activeGenerator = 2">G2</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 3}" role="button" data-channel=3 @click="settings.activeGenerator = 3">3</a>
+            <a class="nav-link channel-nav" :class="{'active': settings.activeGenerator == 3}" role="button" data-channel=3 @click="settings.activeGenerator = 3">G3</a>
           </li>
         </ul>
 
@@ -245,7 +248,7 @@
           <div class="input-group mb-3">
             <label class="input-group-text" for="sourceGenerator">Source generator</label>
             <select class="form-select" v-model="activeChannel.generator" id="sourceGenerator">
-              <option v-for="(n, i) in 4" :value="i">{{ i }}</option>
+              <option v-for="(n, i) in 4" :value="i">G{{ i }}</option>
             </select>
             <span class="input-group-text" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Choose the source for this channel of the image">
               <i class="bi bi-question"></i>
@@ -599,6 +602,7 @@ function GetRenderBufferData() {
     renderType.value,
     lightPositionX.value,
     lightPositionY.value,
+    settings.activeGenerator,
   ]);
 }
 
