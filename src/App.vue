@@ -20,7 +20,7 @@
               <span class="visually-hidden">Generating...</span>
             </div>
           </div>
-          <canvas width="256" height="256" ref="canvas"></canvas>
+          <canvas width="256" height="256" ref="canvas" @mouseenter="renderType = 1" @mouseleave="renderType = 0" @mousemove="handleMouseMove"></canvas>
         </div>
 
         <p class="text-info">
@@ -376,17 +376,23 @@ let context: any;
 let format: any;
 let computeModule: any;
 let compositingModule: any;
-let uniformBuffer: any;
+let settingsBuffer: any;
+let renderBuffer: any;
 let noiseBuffer: any;
 let outputBuffer: any;
 let computePipeline: any;
 let compositingPipeline: any;
+let computeBindGroup: any;
+let compositingBindGroup: any;
 
 const noiseTypes = ["Random", "Perlin", "Voronoi"];
 const distanceTypes = ["Euclidean", "Squared", "Manhattan", "Chebyshev"];
 const sourceTypes = ["Value", "Normal X", "Normal Y", "0", "1"];
 const channelsData = [];
 const generating = ref(false);
+const renderType = ref(0);
+const lightPositionX = ref(0.5);
+const lightPositionY = ref(0.5);
 const error = ref("");
 const canvas = useTemplateRef("canvas");
 const initialSeed = getRandomSeed();
@@ -533,10 +539,11 @@ onMounted(async () => {
     console.error(e);
     initialized = false;
   }
+  requestAnimationFrame(renderLoop);
 })
 
 
-function GetUniformData(generator: number) {
+function GetSettingsBufferData(generator: number) {
   return new Float32Array([
     generator,
     settings.resolution,
@@ -587,6 +594,14 @@ function GetUniformData(generator: number) {
   ]);
 }
 
+function GetRenderBufferData() {
+  return new Float32Array([
+    renderType.value,
+    lightPositionX.value,
+    lightPositionY.value,
+  ]);
+}
+
 
 function setupRenderPipeline() {
   if (initialized == false) return;
@@ -597,8 +612,13 @@ function setupRenderPipeline() {
   canvas.value.width = canvasWidth.value;
   canvas.value.height = canvasHeight.value;
 
-  uniformBuffer = device.createBuffer({
-    size: GetUniformData(0).byteLength,
+  settingsBuffer = device.createBuffer({
+    size: GetSettingsBufferData(0).byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+
+  renderBuffer = device.createBuffer({
+    size: GetRenderBufferData(0).byteLength,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
@@ -615,10 +635,12 @@ function setupRenderPipeline() {
   const bindGroupLayout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' }, },
-      { binding: 1, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: 'storage' }, },
+      { binding: 1, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' }, },
       { binding: 2, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: 'storage' }, },
+      { binding: 3, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: 'storage' }, },
     ],
   });
+
   const pipelineLayout = device.createPipelineLayout({
     bindGroupLayouts: [bindGroupLayout]
   });
@@ -648,6 +670,26 @@ function setupRenderPipeline() {
       topology: 'triangle-list'
     }
   });
+
+  computeBindGroup = device.createBindGroup({
+    layout: computePipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: settingsBuffer } },
+      { binding: 1, resource: { buffer: renderBuffer } },
+      { binding: 2, resource: { buffer: noiseBuffer } },
+      { binding: 3, resource: { buffer: outputBuffer } },
+    ]
+  });
+
+  compositingBindGroup = device.createBindGroup({
+    layout: compositingPipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: settingsBuffer } },
+      { binding: 1, resource: { buffer: renderBuffer } },
+      { binding: 2, resource: { buffer: noiseBuffer } },
+      { binding: 3, resource: { buffer: outputBuffer } },
+    ]
+  });
 }
 
 
@@ -660,27 +702,9 @@ function generateNoise(allChannels: boolean) {
   const dispatchY = Math.ceil(resolutionY / 4);
   const dispatchZ = Math.ceil(resolutionZ  / 4);
 
-  const computeBindGroup = device.createBindGroup({
-    layout: computePipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: noiseBuffer } },
-      { binding: 2, resource: { buffer: outputBuffer } },
-    ]
-  });
-
-  const compositingBindGroup = device.createBindGroup({
-    layout: compositingPipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: noiseBuffer } },
-      { binding: 2, resource: { buffer: outputBuffer } },
-    ]
-  });
-
 
   for (let c = 0; c < 4; c++) {
-    device.queue.writeBuffer(uniformBuffer, 0, GetUniformData(c));
+    device.queue.writeBuffer(settingsBuffer, 0, GetSettingsBufferData(c));
     const commandEncoder = device.createCommandEncoder();
     const computePass = commandEncoder.beginComputePass();
     computePass.setPipeline(computePipeline);
@@ -689,7 +713,16 @@ function generateNoise(allChannels: boolean) {
     computePass.end();
     device.queue.submit([commandEncoder.finish()]);
   }
+}
 
+
+function renderLoop() {
+  render();
+  requestAnimationFrame(renderLoop);
+}
+
+
+function render() {
   const commandEncoder = device.createCommandEncoder();
   const compositingPass = commandEncoder.beginRenderPass({
     colorAttachments: [{
@@ -704,12 +737,23 @@ function generateNoise(allChannels: boolean) {
   compositingPass.draw(6);
   compositingPass.end();
 
+  device.queue.writeBuffer(renderBuffer, 0, GetRenderBufferData(0));
   device.queue.submit([commandEncoder.finish()]);
 }
 
 
 function onPresetSelection(channelPresetName) {
   settings.channels = structuredClone(channelsPresets[channelPresetName]);
+}
+
+
+function handleMouseMove(event) {
+  const rect = canvas.value.getBoundingClientRect()
+  const x = (event.clientX - rect.left) / rect.width;
+  const y = (event.clientY - rect.top) / rect.height;
+
+  lightPositionX.value = -(x * 2 - 1)
+  lightPositionY.value = -(y * 2 - 1);
 }
 
 

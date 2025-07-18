@@ -1,7 +1,8 @@
 
 @group(0) @binding(0) var<uniform> settings: Settings;
-@group(0) @binding(1) var<storage, read_write> noiseBuffer: array<float>;
-@group(0) @binding(2) var<storage, read_write> outputBuffer: array<float>;
+@group(0) @binding(1) var<uniform> render: Render;
+@group(0) @binding(2) var<storage, read_write> noiseBuffer: array<float>;
+@group(0) @binding(3) var<storage, read_write> outputBuffer: array<float>;
 
 @vertex
 fn vertex(@builtin(vertex_index) i: uint) -> @builtin(position) float4 {
@@ -48,6 +49,11 @@ fn fragment(@builtin(position) fragCoord: float4) -> @location(0) float4 {
   let channel3gain = float(settings.channel3gain);
   let channel3gamma = float(settings.channel3gamma);
   let channel3offset = float(settings.channel3offset);
+
+  let renderType = u32(render.renderType);
+  let lightPositionX = float(render.lightPositionX);
+  let lightPositionY = float(render.lightPositionY);
+
   let normalScale = 1.0;
 
   let fragX = uint(fragCoord.x);
@@ -57,6 +63,8 @@ fn fragment(@builtin(position) fragCoord: float4) -> @location(0) float4 {
   let x = fragX % resolutionX;
   let y = fragY % resolutionY;
   let z = tileX + xTiles * tileY;
+  let u = float(fragX) / float(resolutionX * xTiles);
+  let v = float(fragY) / float(resolutionY * yTiles);
 
   let outputIndex = fragX + (resolutionX * xTiles) * fragY;
   let index = x + resolutionX * y + resolutionX * resolutionY * z;
@@ -100,6 +108,22 @@ fn fragment(@builtin(position) fragCoord: float4) -> @location(0) float4 {
 
   let checkerColor = (floor(float(fragX) * 0.1) + floor(float(fragY) * 0.1)) % 2.0 * 0.2 + 0.2;
   let background = float4(checkerColor, checkerColor, checkerColor, checkerColor);
+
+  let normal = normalize(float3(values[0][1] * 2.0 - 1.0, values[0][2] * 2.0 - 1.0, 1.0));
+  let viewDirection = normalize(float3(u * 2.0 - 1.0, v * 2.0 - 1.0, 1.0));
+  let lightDirection = normalize(float3(lightPositionX, lightPositionY, 1.0));
+  let halfVec = normalize(lightDirection + viewDirection);
+  let nDotL = saturate(dot(normal, lightDirection));
+  let nDotH = saturate(dot(normal, halfVec));
+  let specular = pow(nDotH, 10.0);
+
+  if (renderType == RENDER_TYPE_BASE) {
+    return alpha_blend(output, background);
+  }
+
+  if (renderType == RENDER_TYPE_LIT) {
+    return float4(specular, specular, specular, 1.0);
+  }
 
   return alpha_blend(output, background);
 }

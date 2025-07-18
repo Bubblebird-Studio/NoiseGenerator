@@ -22,6 +22,9 @@ const VORONOI_DISTANCE_TYPE_SQUARED = 1;
 const VORONOI_DISTANCE_TYPE_MANHATTAN = 2;
 const VORONOI_DISTANCE_TYPE_CHEBYSHEV = 3;
 
+const RENDER_TYPE_BASE = 0;
+const RENDER_TYPE_LIT = 1;
+
 const VALUE_TYPE_VALUE = 0;
 const VALUE_TYPE_NORMALX = 1;
 const VALUE_TYPE_NORMALY = 2;
@@ -77,6 +80,13 @@ struct Settings {
   channel3gamma: float,
   channel3offset: float,
 };
+
+
+struct Render {
+  renderType: float,
+  lightPositionX: float,
+  lightPositionY: float,
+}
 
 
 fn hash_int3(v: int3) -> uint {
