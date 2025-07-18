@@ -15,6 +15,20 @@ See it in action:
 
 https://github.com/user-attachments/assets/53a38b09-0198-4a67-97d2-aa8bbc5d4874
 
+This project uses [Deno](https://deno.com/).
+
+## Dev
+
+Start the dev server, use this command:
+> Deno run dev
+
+## Build
+
+...and to build for production & serve the files on localhost:8080, this one:
+> Deno run build
+
+## License
+
 The code is published under the MIT License.
 
 ## Support
