@@ -264,17 +264,17 @@
 
           <div class="input-group mb-3">
             <div class="input-group-text">
-              <input type="range" class="form-range" :style="{width: '60px'}" min="0.0" max="2.0" step="0.01" id="gain" v-model="activeChannel.gain" @dblclick="activeChannel.gain = 1.0">
+              <input type="range" class="form-range" :style="{width: '40px'}" min="0.0" max="2.0" step="0.01" id="gain" v-model="activeChannel.gain" @dblclick="activeChannel.gain = 1.0">
             </div>
             <label class="input-group-text" for="gain">{{ activeChannel.gain }}</label>
 
             <div class="input-group-text">
-              <input type="range" class="form-range" :style="{width: '60px'}" min="0.0" max="2.0" step="0.01" id="gamma" v-model="activeChannel.gamma" @dblclick="activeChannel.gamma = 1.0">
+              <input type="range" class="form-range" :style="{width: '40px'}" min="0.0" max="2.0" step="0.01" id="gamma" v-model="activeChannel.gamma" @dblclick="activeChannel.gamma = 1.0">
             </div>
             <label class="input-group-text" for="gamma">{{ activeChannel.gamma }}</label>
 
             <div class="input-group-text">
-              <input type="range" class="form-range" :style="{width: '60px'}" min="-1.0" max="1.0" step="0.01" id="offset" v-model="activeChannel.offset" @dblclick="activeChannel.offset = 0.0">
+              <input type="range" class="form-range" :style="{width: '40px'}" min="-1.0" max="1.0" step="0.01" id="offset" v-model="activeChannel.offset" @dblclick="activeChannel.offset = 0.0">
             </div>
             <label class="input-group-text" for="offset">{{ activeChannel.offset }}</label>
 
@@ -366,7 +366,6 @@
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, reactive , onMounted, watch } from "vue";
 import { getRandomSeed, createBuffer, createPipeline } from "./utils.ts";
-//import { Tooltip, Dropdown } from "bootstrap";
 import utilsShader from "./utils.wgsl?raw" with { type: "text" };
 import computeShader from "./computeShader.wgsl?raw" with { type: "text" };
 import compositingShader from "./compositingShader.wgsl?raw" with { type: "text" };

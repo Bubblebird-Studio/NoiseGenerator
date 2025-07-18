@@ -1,11 +1,11 @@
 {
   "tasks": {
-    "dev": "deno run ./src/main.ts",
-    "ui": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "deno run -A vite",
+    "server": "deno run --allow-read --allow-net ./src/serve.ts",
+    "build": "deno run -A vite build && deno run server"
   },
   "imports": {
+    "@std/http": "jsr:@std/http@^1.0.19",
     "@vitejs/plugin-vue": "npm:@vitejs/plugin-vue@^6.0.0",
     "bootstrap": "npm:bootstrap@^5.3.7",
     "bootstrap-icons": "npm:bootstrap-icons@^1.13.1",
