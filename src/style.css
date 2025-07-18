@@ -1,0 +1,27 @@
+.hidden {
+    display: none !important;
+}
+
+.viewer {
+    position: relative;
+    background-color: #2b3035;
+    width: 512px;
+    height: 512px;
+    display: flex;
+    justify-content: center;
+    justify-items: center;
+}
+
+#generatingPlanel {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #0000004c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s;
+}
