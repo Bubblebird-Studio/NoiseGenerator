@@ -26,7 +26,7 @@ fn insert_sorted(distances: float4, value: float) -> float4 {
 }
 
 
-@compute @workgroup_size(4, 4, 4)
+@compute @workgroup_size(8, 8, 8)
 fn main(@builtin(global_invocation_id) coord: uint3) {
   let generatorIndex = uint(settings.generatorIndex);
   let resolutionX = uint(settings.resolutionX);

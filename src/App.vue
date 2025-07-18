@@ -343,13 +343,9 @@
           <div class="mb-3">
             <label for="recipient-name" class="col-form-label">Choose a setting to load:</label>
             <div class="list-group">
-              <div v-for="setting in settingsCollection">
-                <button type="button" class="list-group-item list-group-item-action position-relative" @click.stop="loadSetting(setting)">
-                  {{ setting.name }}
-                </button>
-                <button type="button" class="btn position-absolute top-50 end-0 translate-middle" @click.stop="removeSetting(setting)">
-                  <i class="bi bi-trash3"></i>
-                </button>
+              <div v-for="setting in settingsCollection" class="btn-group mt-3 d-flex" role="group">
+                <button type="button" class="btn btn-secondary flex-grow-1" @click.stop="loadSetting(setting)">{{ setting.name }}</button>
+                <button type="button" class="btn btn-danger flex-grow-0" @click.stop="removeSetting(setting)"><i class="bi bi-trash3"></i></button>
               </div>
               <div v-if="Object.keys(settingsCollection).length == 0"><p class="text-info"><i class="bi bi-info-circle"></i> No settings saved on this browser.</p></div>
             </div>
@@ -471,12 +467,12 @@ const defaultSettings = {
 }
 
 const settings = reactive(JSON.parse(JSON.stringify(defaultSettings)));
-const settingsCollection = reactive(JSON.parse(localStorage.getItem("settingsCollection") || "{}"));
 const is3d = computed(() => settings.dimension === "3d" && settings.resolution < 512)
 const activeGenerator = computed(() => settings.generators[settings.activeGenerator])
 const activeChannel = computed(() => settings.channels[settings.activeChannel])
 const canvasWidth = computed(() => settings.resolution * xTiles.value)
 const canvasHeight = computed(() => settings.resolution * yTiles.value)
+const settingsCollection = reactive(JSON.parse(localStorage.getItem("settingsCollection") || "{}"));
 
 const xTiles = computed(() => {
   const sqr = Math.sqrt(settings.resolution);
@@ -500,18 +496,21 @@ const yTiles = computed(() => {
 
 watch(() => settings.dimension, (newValue, oldValue) => {
   setupRenderPipeline();
+  generateNoise();
 })
 
 watch(() => settings.layout, (newValue, oldValue) => {
   setupRenderPipeline();
+  generateNoise()
 })
 
 watch(() => settings.resolution, (newValue, oldValue) => {
   setupRenderPipeline();
+  generateNoise()
 })
 
 watch(settings, (newValue, oldValue) => {
-  generateNoise(true);
+  generateNoise();
 })
 
 onMounted(async () => {
@@ -522,7 +521,8 @@ onMounted(async () => {
       requiredLimits: {
         maxBufferSize: 2147483644,
         maxStorageBufferBindingSize: 2147483644,
-        maxTextureDimension2D: 16384
+        maxTextureDimension2D: 16384,
+        maxComputeInvocationsPerWorkgroup: 1024
       }
     });
     context = canvas.value?.getContext("webgpu");
@@ -533,7 +533,7 @@ onMounted(async () => {
     context.configure({ device, format, alphaMode: "opaque" });
     initialized = true;
     setupRenderPipeline();
-    await generateNoise(true);
+    generateNoise();
   } catch(e) {
     error.value = `Your browser doesn't support webGPU! error: ${e.message}`;
     console.error(e);
@@ -618,7 +618,7 @@ function setupRenderPipeline() {
   });
 
   renderBuffer = device.createBuffer({
-    size: GetRenderBufferData(0).byteLength,
+    size: GetRenderBufferData().byteLength,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
@@ -693,15 +693,14 @@ function setupRenderPipeline() {
 }
 
 
-function generateNoise(allChannels: boolean) {
+function generateNoise() {
   if (initialized == false) return;
   const resolutionX = settings.resolution;
   const resolutionY = settings.resolution;
   const resolutionZ = is3d.value ? settings.resolution : 1;
-  const dispatchX = Math.ceil(resolutionX  / 4);
-  const dispatchY = Math.ceil(resolutionY / 4);
-  const dispatchZ = Math.ceil(resolutionZ  / 4);
-
+  const dispatchX = Math.ceil(resolutionX  / 8);
+  const dispatchY = Math.ceil(resolutionY / 8);
+  const dispatchZ = Math.ceil(resolutionZ  / 8);
 
   for (let c = 0; c < 4; c++) {
     device.queue.writeBuffer(settingsBuffer, 0, GetSettingsBufferData(c));
@@ -737,7 +736,7 @@ function render() {
   compositingPass.draw(6);
   compositingPass.end();
 
-  device.queue.writeBuffer(renderBuffer, 0, GetRenderBufferData(0));
+  device.queue.writeBuffer(renderBuffer, 0, GetRenderBufferData());
   device.queue.submit([commandEncoder.finish()]);
 }
 
@@ -826,8 +825,6 @@ async function copyImageToClipboard() {
 
 async function loadSetting(loadedSettings: any) {
   Object.assign(settings, loadedSettings);
-  setupRenderPipeline();
-  //loadModal.hide();
 }
 
 
@@ -841,8 +838,7 @@ function removeSetting(setting: any) {
 
 function saveSettings() {
   try {
-    const settingsCollection = JSON.parse(localStorage.getItem("settingsCollection") || "{}");
-    settingsCollection[settings.name] = settings
+    settingsCollection[settings.name] = JSON.parse(JSON.stringify(settings));
     localStorage.setItem("settingsCollection", JSON.stringify(settingsCollection));
   } catch(e) {
     fixSettingsCollection();
