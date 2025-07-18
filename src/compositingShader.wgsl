@@ -53,6 +53,7 @@ fn fragment(@builtin(position) fragCoord: float4) -> @location(0) float4 {
   let renderType = u32(render.renderType);
   let lightPositionX = float(render.lightPositionX);
   let lightPositionY = float(render.lightPositionY);
+  let activeGenerator = u32(render.activeGenerator);
 
   let normalScale = 1.0;
 
@@ -109,7 +110,7 @@ fn fragment(@builtin(position) fragCoord: float4) -> @location(0) float4 {
   let checkerColor = (floor(float(fragX) * 0.1) + floor(float(fragY) * 0.1)) % 2.0 * 0.2 + 0.2;
   let background = float4(checkerColor, checkerColor, checkerColor, checkerColor);
 
-  let normal = normalize(float3(values[0][1] * 2.0 - 1.0, values[0][2] * 2.0 - 1.0, 1.0));
+  let normal = normalize(float3(values[activeGenerator][1] * 2.0 - 1.0, values[activeGenerator][2] * 2.0 - 1.0, 1.0));
   let viewDirection = normalize(float3(u * 2.0 - 1.0, v * 2.0 - 1.0, 1.0));
   let lightDirection = normalize(float3(lightPositionX, lightPositionY, 1.0));
   let halfVec = normalize(lightDirection + viewDirection);
