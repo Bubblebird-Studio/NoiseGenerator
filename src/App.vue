@@ -398,7 +398,7 @@ const canvas = useTemplateRef("canvas");
 const initialSeed = getRandomSeed();
 
 const defaultGeneratorSettings = {
-  type: 0,
+  type: 2,
   seamless: true,
   seed: initialSeed,
   perlinSize: 0.2,
